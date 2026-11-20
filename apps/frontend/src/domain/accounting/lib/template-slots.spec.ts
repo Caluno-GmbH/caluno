@@ -51,8 +51,8 @@ describe('asInvoiceNumberFormat', () => {
 });
 
 const TYPES = [
-  { id: 'type-ehrenamt', key: ReimbursementTypeKey.Ehrenamt },
-  { id: 'type-ul', key: ReimbursementTypeKey.Uebungsleiter },
+  { key: ReimbursementTypeKey.Ehrenamt },
+  { key: ReimbursementTypeKey.Uebungsleiter },
 ];
 
 describe('findReimbursementType', () => {
@@ -69,18 +69,18 @@ describe('slotRefFor', () => {
   it('maps the Pauschale and kind to the API slot', () => {
     expect(slotRefFor('ehrenamt', 'contract', TYPES)).toEqual({
       kind: DocumentKind.Contract,
-      reimbursementTypeId: 'type-ehrenamt',
+      reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
     });
     expect(slotRefFor('uebungsleiter', 'invoice', TYPES)).toEqual({
       kind: DocumentKind.Invoice,
-      reimbursementTypeId: 'type-ul',
+      reimbursementTypeKey: ReimbursementTypeKey.Uebungsleiter,
     });
   });
 
   it('leaves the type id undefined until the types have loaded', () => {
     expect(slotRefFor('ehrenamt', 'invoice', undefined)).toEqual({
       kind: DocumentKind.Invoice,
-      reimbursementTypeId: undefined,
+      reimbursementTypeKey: undefined,
     });
   });
 });

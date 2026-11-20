@@ -109,6 +109,57 @@ describe('TenantScopeService.assertResourceInScope', () => {
   });
 });
 
+describe('TenantScopeService.assertResourceInAncestorScope', () => {
+  it('accepts a resource in the header unit itself', async () => {
+    await expect(
+      createService().assertResourceInAncestorScope('branch', 'branch'),
+    ).resolves.toBeUndefined();
+  });
+
+  it('accepts a resource in an ancestor of the header unit', async () => {
+    await expect(
+      createService().assertResourceInAncestorScope('leaf', 'root'),
+    ).resolves.toBeUndefined();
+  });
+
+  it('rejects a resource in a descendant of the header unit', async () => {
+    await expect(
+      createService().assertResourceInAncestorScope('root', 'leaf'),
+    ).rejects.toBeInstanceOf(NotFoundGraphQLError);
+  });
+
+  it('rejects a resource in a sibling branch', async () => {
+    await expect(
+      createService().assertResourceInAncestorScope('leaf', 'sibling'),
+    ).rejects.toBeInstanceOf(NotFoundGraphQLError);
+  });
+
+  it('rejects a resource in another organization', async () => {
+    await expect(
+      createService().assertResourceInAncestorScope('leaf', 'foreign'),
+    ).rejects.toBeInstanceOf(NotFoundGraphQLError);
+  });
+
+  it.each([null, undefined, ''])(
+    'rejects a resource without a unit (%p)',
+    async (resourceUnitId) => {
+      await expect(
+        createService().assertResourceInAncestorScope('leaf', resourceUnitId),
+      ).rejects.toBeInstanceOf(NotFoundGraphQLError);
+    },
+  );
+
+  it('rejects with the given message', async () => {
+    await expect(
+      createService().assertResourceInAncestorScope(
+        'branch',
+        'sibling',
+        'No request',
+      ),
+    ).rejects.toThrow('No request');
+  });
+});
+
 describe('TenantScopeService.assertUserInScope', () => {
   it('accepts a user with a membership below the header unit', async () => {
     await expect(

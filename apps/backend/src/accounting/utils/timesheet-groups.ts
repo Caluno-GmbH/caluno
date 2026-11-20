@@ -1,11 +1,12 @@
 import type { EligibleTimesheetVolunteer } from '../accounting.types';
+import { ReimbursementTypeKey } from '../enums';
 import { billingMonthBoundsOf } from './billing-period';
 
 /** An eligible time entry as the timesheet grouping needs it: ended, and paid. */
 export interface TimesheetCandidateEntry {
   id: string;
   volunteerId: string;
-  reimbursementTypeId: string;
+  reimbursementTypeKey: ReimbursementTypeKey;
   startedAt: Date;
   endedAt: Date;
 }
@@ -31,10 +32,10 @@ export function groupTimesheetCandidates(
   const groups = new Map<string, EligibleTimesheetVolunteer>();
   for (const entry of entries) {
     const month = billingMonthBoundsOf(entry.startedAt);
-    const key = `${entry.volunteerId}:${entry.reimbursementTypeId}:${month.start.toISOString()}`;
+    const key = `${entry.volunteerId}:${entry.reimbursementTypeKey}:${month.start.toISOString()}`;
     const group = groups.get(key) ?? {
       volunteerId: entry.volunteerId,
-      reimbursementTypeId: entry.reimbursementTypeId,
+      reimbursementTypeKey: entry.reimbursementTypeKey,
       periodStart: month.start,
       periodEnd: month.end,
       eligibleHours: 0,

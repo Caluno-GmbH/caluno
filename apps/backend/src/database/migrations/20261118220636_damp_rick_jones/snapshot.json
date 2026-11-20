@@ -1,0 +1,1165 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "95880c60-4217-46cd-98eb-2e91e1570cca",
+  "prevIds": ["66fb7ca4-8ea7-435e-b0ce-063d7a4d062a"],
+  "footprints": [
+    {
+      "statementType": "drop_fk",
+      "statementTarget": ["table", "public", "contracts"],
+      "writes": [
+        "s|fk|public.contracts.contracts_reimbursement_type_id_reimbursement_types_id_fkey",
+        "n|fk|public.contracts.contracts_reimbursement_type_id_reimbursement_types_id_fkey",
+        "e|fk|public.contracts.contracts_reimbursement_type_id_reimbursement_types_id_fkey",
+        "n|con|public.contracts.contracts_reimbursement_type_id_reimbursement_types_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.contracts",
+        "n|sch|public",
+        "e|col|public.contracts.reimbursement_type_key"
+      ]
+    },
+    {
+      "statementType": "drop_fk",
+      "statementTarget": ["table", "public", "document_templates"],
+      "writes": [
+        "s|fk|public.document_templates.document_templates_dBOb81rs3ftQ_fkey",
+        "n|fk|public.document_templates.document_templates_dBOb81rs3ftQ_fkey",
+        "e|fk|public.document_templates.document_templates_dBOb81rs3ftQ_fkey",
+        "n|con|public.document_templates.document_templates_dBOb81rs3ftQ_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.document_templates",
+        "n|sch|public",
+        "e|col|public.document_templates.reimbursement_type_key"
+      ]
+    },
+    {
+      "statementType": "drop_fk",
+      "statementTarget": ["table", "public", "invoices"],
+      "writes": [
+        "s|fk|public.invoices.invoices_reimbursement_type_id_reimbursement_types_id_fkey",
+        "n|fk|public.invoices.invoices_reimbursement_type_id_reimbursement_types_id_fkey",
+        "e|fk|public.invoices.invoices_reimbursement_type_id_reimbursement_types_id_fkey",
+        "n|con|public.invoices.invoices_reimbursement_type_id_reimbursement_types_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.invoices",
+        "n|sch|public",
+        "e|col|public.invoices.reimbursement_type_key"
+      ]
+    },
+    {
+      "statementType": "drop_fk",
+      "statementTarget": ["table", "public", "reimbursement_bundle_deliveries"],
+      "writes": [
+        "s|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_6VhCMas4r3gf_fkey",
+        "n|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_6VhCMas4r3gf_fkey",
+        "e|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_6VhCMas4r3gf_fkey",
+        "n|con|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_6VhCMas4r3gf_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_bundle_deliveries",
+        "n|sch|public",
+        "e|col|public.reimbursement_bundle_deliveries.reimbursement_type_key"
+      ]
+    },
+    {
+      "statementType": "drop_fk",
+      "statementTarget": ["table", "public", "reimbursement_bundle_downloads"],
+      "writes": [
+        "s|fk|public.reimbursement_bundle_downloads.reimbursement_bundle_downloads_wYr9Yo32WOYe_fkey",
+        "n|fk|public.reimbursement_bundle_downloads.reimbursement_bundle_downloads_wYr9Yo32WOYe_fkey",
+        "e|fk|public.reimbursement_bundle_downloads.reimbursement_bundle_downloads_wYr9Yo32WOYe_fkey",
+        "n|con|public.reimbursement_bundle_downloads.reimbursement_bundle_downloads_wYr9Yo32WOYe_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_bundle_downloads",
+        "n|sch|public",
+        "e|col|public.reimbursement_bundle_downloads.reimbursement_type_key"
+      ]
+    },
+    {
+      "statementType": "drop_fk",
+      "statementTarget": ["table", "public", "reimbursement_manual_baselines"],
+      "writes": [
+        "s|fk|public.reimbursement_manual_baselines.reimbursement_manual_baselines_UkklTF5FXBMJ_fkey",
+        "n|fk|public.reimbursement_manual_baselines.reimbursement_manual_baselines_UkklTF5FXBMJ_fkey",
+        "e|fk|public.reimbursement_manual_baselines.reimbursement_manual_baselines_UkklTF5FXBMJ_fkey",
+        "n|con|public.reimbursement_manual_baselines.reimbursement_manual_baselines_UkklTF5FXBMJ_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_manual_baselines",
+        "n|sch|public",
+        "e|col|public.reimbursement_manual_baselines.reimbursement_type_key"
+      ]
+    },
+    {
+      "statementType": "drop_fk",
+      "statementTarget": ["table", "public", "reimbursement_rates"],
+      "writes": [
+        "s|fk|public.reimbursement_rates.reimbursement_rates_RDd1dX429TuF_fkey",
+        "n|fk|public.reimbursement_rates.reimbursement_rates_RDd1dX429TuF_fkey",
+        "e|fk|public.reimbursement_rates.reimbursement_rates_RDd1dX429TuF_fkey",
+        "n|con|public.reimbursement_rates.reimbursement_rates_RDd1dX429TuF_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_rates",
+        "n|sch|public",
+        "e|col|public.reimbursement_rates.reimbursement_type_key"
+      ]
+    },
+    {
+      "statementType": "drop_fk",
+      "statementTarget": ["table", "public", "shifts"],
+      "writes": [
+        "s|fk|public.shifts.shifts_reimbursement_type_id_reimbursement_types_id_fkey",
+        "n|fk|public.shifts.shifts_reimbursement_type_id_reimbursement_types_id_fkey",
+        "e|fk|public.shifts.shifts_reimbursement_type_id_reimbursement_types_id_fkey",
+        "n|con|public.shifts.shifts_reimbursement_type_id_reimbursement_types_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.shifts",
+        "n|sch|public",
+        "e|col|public.shifts.reimbursement_type_key"
+      ]
+    },
+    {
+      "statementType": "drop_fk",
+      "statementTarget": ["table", "public", "shift_instances"],
+      "writes": [
+        "s|fk|public.shift_instances.shift_instances_vqbeHnPUINmZ_fkey",
+        "n|fk|public.shift_instances.shift_instances_vqbeHnPUINmZ_fkey",
+        "e|fk|public.shift_instances.shift_instances_vqbeHnPUINmZ_fkey",
+        "n|con|public.shift_instances.shift_instances_vqbeHnPUINmZ_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.shift_instances",
+        "n|sch|public",
+        "e|col|public.shift_instances.override_reimbursement_type_key"
+      ]
+    },
+    {
+      "statementType": "drop_fk",
+      "statementTarget": ["table", "public", "time_entries"],
+      "writes": [
+        "s|fk|public.time_entries.time_entries_reimbursement_type_id_reimbursement_types_id_fkey",
+        "n|fk|public.time_entries.time_entries_reimbursement_type_id_reimbursement_types_id_fkey",
+        "e|fk|public.time_entries.time_entries_reimbursement_type_id_reimbursement_types_id_fkey",
+        "n|con|public.time_entries.time_entries_reimbursement_type_id_reimbursement_types_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.time_entries",
+        "n|sch|public",
+        "e|col|public.time_entries.reimbursement_type_key"
+      ]
+    },
+    {
+      "statementType": "rename_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "contracts",
+        "reimbursement_type_id"
+      ],
+      "writes": [
+        "s|col|public.contracts.reimbursement_type_id",
+        "n|col|public.contracts.reimbursement_type_id",
+        "s|col|public.contracts.reimbursement_type_key",
+        "n|col|public.contracts.reimbursement_type_key"
+      ],
+      "reads": ["n|tbl|public.contracts", "n|sch|public"]
+    },
+    {
+      "statementType": "rename_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "document_templates",
+        "reimbursement_type_id"
+      ],
+      "writes": [
+        "s|col|public.document_templates.reimbursement_type_id",
+        "n|col|public.document_templates.reimbursement_type_id",
+        "s|col|public.document_templates.reimbursement_type_key",
+        "n|col|public.document_templates.reimbursement_type_key"
+      ],
+      "reads": ["n|tbl|public.document_templates", "n|sch|public"]
+    },
+    {
+      "statementType": "rename_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "invoices",
+        "reimbursement_type_id"
+      ],
+      "writes": [
+        "s|col|public.invoices.reimbursement_type_id",
+        "n|col|public.invoices.reimbursement_type_id",
+        "s|col|public.invoices.reimbursement_type_key",
+        "n|col|public.invoices.reimbursement_type_key"
+      ],
+      "reads": ["n|tbl|public.invoices", "n|sch|public"]
+    },
+    {
+      "statementType": "rename_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "reimbursement_bundle_deliveries",
+        "reimbursement_type_id"
+      ],
+      "writes": [
+        "s|col|public.reimbursement_bundle_deliveries.reimbursement_type_id",
+        "n|col|public.reimbursement_bundle_deliveries.reimbursement_type_id",
+        "s|col|public.reimbursement_bundle_deliveries.reimbursement_type_key",
+        "n|col|public.reimbursement_bundle_deliveries.reimbursement_type_key"
+      ],
+      "reads": ["n|tbl|public.reimbursement_bundle_deliveries", "n|sch|public"]
+    },
+    {
+      "statementType": "rename_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "reimbursement_bundle_downloads",
+        "reimbursement_type_id"
+      ],
+      "writes": [
+        "s|col|public.reimbursement_bundle_downloads.reimbursement_type_id",
+        "n|col|public.reimbursement_bundle_downloads.reimbursement_type_id",
+        "s|col|public.reimbursement_bundle_downloads.reimbursement_type_key",
+        "n|col|public.reimbursement_bundle_downloads.reimbursement_type_key"
+      ],
+      "reads": ["n|tbl|public.reimbursement_bundle_downloads", "n|sch|public"]
+    },
+    {
+      "statementType": "rename_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "reimbursement_manual_baselines",
+        "reimbursement_type_id"
+      ],
+      "writes": [
+        "s|col|public.reimbursement_manual_baselines.reimbursement_type_id",
+        "n|col|public.reimbursement_manual_baselines.reimbursement_type_id",
+        "s|col|public.reimbursement_manual_baselines.reimbursement_type_key",
+        "n|col|public.reimbursement_manual_baselines.reimbursement_type_key"
+      ],
+      "reads": ["n|tbl|public.reimbursement_manual_baselines", "n|sch|public"]
+    },
+    {
+      "statementType": "rename_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "reimbursement_rates",
+        "reimbursement_type_id"
+      ],
+      "writes": [
+        "s|col|public.reimbursement_rates.reimbursement_type_id",
+        "n|col|public.reimbursement_rates.reimbursement_type_id",
+        "s|col|public.reimbursement_rates.reimbursement_type_key",
+        "n|col|public.reimbursement_rates.reimbursement_type_key"
+      ],
+      "reads": ["n|tbl|public.reimbursement_rates", "n|sch|public"]
+    },
+    {
+      "statementType": "rename_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "shifts",
+        "reimbursement_type_id"
+      ],
+      "writes": [
+        "s|col|public.shifts.reimbursement_type_id",
+        "n|col|public.shifts.reimbursement_type_id",
+        "s|col|public.shifts.reimbursement_type_key",
+        "n|col|public.shifts.reimbursement_type_key"
+      ],
+      "reads": ["n|tbl|public.shifts", "n|sch|public"]
+    },
+    {
+      "statementType": "rename_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "shift_instances",
+        "override_reimbursement_type_id"
+      ],
+      "writes": [
+        "s|col|public.shift_instances.override_reimbursement_type_id",
+        "n|col|public.shift_instances.override_reimbursement_type_id",
+        "s|col|public.shift_instances.override_reimbursement_type_key",
+        "n|col|public.shift_instances.override_reimbursement_type_key"
+      ],
+      "reads": ["n|tbl|public.shift_instances", "n|sch|public"]
+    },
+    {
+      "statementType": "rename_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "time_entries",
+        "reimbursement_type_id"
+      ],
+      "writes": [
+        "s|col|public.time_entries.reimbursement_type_id",
+        "n|col|public.time_entries.reimbursement_type_id",
+        "s|col|public.time_entries.reimbursement_type_key",
+        "n|col|public.time_entries.reimbursement_type_key"
+      ],
+      "reads": ["n|tbl|public.time_entries", "n|sch|public"]
+    },
+    {
+      "statementType": "drop_unique",
+      "statementTarget": ["table", "public", "reimbursement_types"],
+      "writes": [
+        "s|uq|public.reimbursement_types.uq_reimbursement_types_key",
+        "n|uq|public.reimbursement_types.uq_reimbursement_types_key",
+        "e|uq|public.reimbursement_types.uq_reimbursement_types_key",
+        "n|con|public.reimbursement_types.uq_reimbursement_types_key",
+        "n|rel|public.uq_reimbursement_types_key"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_types",
+        "n|sch|public",
+        "e|col|public.reimbursement_types.key"
+      ],
+      "sharedWrites": ["e|uniqueness|public.reimbursement_types.key"]
+    },
+    {
+      "statementType": "rename_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "shifts",
+        "idx_shifts_reimbursement_type_id"
+      ],
+      "writes": [
+        "s|idx|public.idx_shifts_reimbursement_type_id",
+        "n|idx|public.idx_shifts_reimbursement_type_id",
+        "n|rel|public.idx_shifts_reimbursement_type_id",
+        "s|idx|public.idx_shifts_reimbursement_type_key",
+        "n|idx|public.idx_shifts_reimbursement_type_key",
+        "n|rel|public.idx_shifts_reimbursement_type_key"
+      ],
+      "reads": [
+        "e|tbl|public.shifts",
+        "n|sch|public",
+        "e|col|public.shifts.reimbursement_type_key"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": ["column", "public", "reimbursement_types", "id"],
+      "writes": [
+        "s|col|public.reimbursement_types.id",
+        "n|col|public.reimbursement_types.id",
+        "e|col|public.reimbursement_types.id"
+      ],
+      "reads": ["n|tbl|public.reimbursement_types", "n|sch|public"]
+    },
+    {
+      "statementType": "alter_pk",
+      "statementTarget": ["table", "public", "reimbursement_types"],
+      "writes": ["s|pk|public.reimbursement_types"],
+      "reads": [
+        "n|tbl|public.reimbursement_types",
+        "n|sch|public",
+        "n|col|public.reimbursement_types.key"
+      ],
+      "sharedWrites": ["e|uniqueness|public.reimbursement_types.id"]
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "contracts",
+        "reimbursement_type_key"
+      ],
+      "writes": [
+        "s|colprop|public.contracts.reimbursement_type_key.type",
+        "s|colprop|public.contracts.reimbursement_type_key.default"
+      ],
+      "reads": [
+        "n|tbl|public.contracts",
+        "n|sch|public",
+        "n|col|public.contracts.reimbursement_type_key",
+        "n|enum|public.reimbursement_type_key"
+      ],
+      "sqlHash": "f044863ba6a705ce"
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "document_templates",
+        "reimbursement_type_key"
+      ],
+      "writes": [
+        "s|colprop|public.document_templates.reimbursement_type_key.type",
+        "s|colprop|public.document_templates.reimbursement_type_key.default"
+      ],
+      "reads": [
+        "n|tbl|public.document_templates",
+        "n|sch|public",
+        "n|col|public.document_templates.reimbursement_type_key",
+        "n|enum|public.reimbursement_type_key"
+      ],
+      "sqlHash": "1960c1c8fa8b8103"
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "invoices",
+        "reimbursement_type_key"
+      ],
+      "writes": [
+        "s|colprop|public.invoices.reimbursement_type_key.type",
+        "s|colprop|public.invoices.reimbursement_type_key.default"
+      ],
+      "reads": [
+        "n|tbl|public.invoices",
+        "n|sch|public",
+        "n|col|public.invoices.reimbursement_type_key",
+        "n|enum|public.reimbursement_type_key"
+      ],
+      "sqlHash": "f70ff3a9004b95bc"
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "reimbursement_rates",
+        "reimbursement_type_key"
+      ],
+      "writes": [
+        "s|colprop|public.reimbursement_rates.reimbursement_type_key.type",
+        "s|colprop|public.reimbursement_rates.reimbursement_type_key.default"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_rates",
+        "n|sch|public",
+        "n|col|public.reimbursement_rates.reimbursement_type_key",
+        "n|enum|public.reimbursement_type_key"
+      ],
+      "sqlHash": "e1436c89ca142673"
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "time_entries",
+        "reimbursement_type_key"
+      ],
+      "writes": [
+        "s|colprop|public.time_entries.reimbursement_type_key.type",
+        "s|colprop|public.time_entries.reimbursement_type_key.default"
+      ],
+      "reads": [
+        "n|tbl|public.time_entries",
+        "n|sch|public",
+        "n|col|public.time_entries.reimbursement_type_key",
+        "n|enum|public.reimbursement_type_key"
+      ],
+      "sqlHash": "c5a1be3ef5f31cfd"
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "reimbursement_bundle_downloads",
+        "reimbursement_type_key"
+      ],
+      "writes": [
+        "s|colprop|public.reimbursement_bundle_downloads.reimbursement_type_key.type",
+        "s|colprop|public.reimbursement_bundle_downloads.reimbursement_type_key.default"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_bundle_downloads",
+        "n|sch|public",
+        "n|col|public.reimbursement_bundle_downloads.reimbursement_type_key",
+        "n|enum|public.reimbursement_type_key"
+      ],
+      "sqlHash": "9eda0aa6f3370ffb"
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "reimbursement_manual_baselines",
+        "reimbursement_type_key"
+      ],
+      "writes": [
+        "s|colprop|public.reimbursement_manual_baselines.reimbursement_type_key.type",
+        "s|colprop|public.reimbursement_manual_baselines.reimbursement_type_key.default"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_manual_baselines",
+        "n|sch|public",
+        "n|col|public.reimbursement_manual_baselines.reimbursement_type_key",
+        "n|enum|public.reimbursement_type_key"
+      ],
+      "sqlHash": "260b6b2abd1da304"
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "shifts",
+        "reimbursement_type_key"
+      ],
+      "writes": [
+        "s|colprop|public.shifts.reimbursement_type_key.type",
+        "s|colprop|public.shifts.reimbursement_type_key.default"
+      ],
+      "reads": [
+        "n|tbl|public.shifts",
+        "n|sch|public",
+        "n|col|public.shifts.reimbursement_type_key",
+        "n|enum|public.reimbursement_type_key"
+      ],
+      "sqlHash": "5c102f4406ae3aac"
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "shift_instances",
+        "override_reimbursement_type_key"
+      ],
+      "writes": [
+        "s|colprop|public.shift_instances.override_reimbursement_type_key.type",
+        "s|colprop|public.shift_instances.override_reimbursement_type_key.default"
+      ],
+      "reads": [
+        "n|tbl|public.shift_instances",
+        "n|sch|public",
+        "n|col|public.shift_instances.override_reimbursement_type_key",
+        "n|enum|public.reimbursement_type_key"
+      ],
+      "sqlHash": "7a34d2be4b6a5a78"
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "reimbursement_bundle_deliveries",
+        "reimbursement_type_key"
+      ],
+      "writes": [
+        "s|colprop|public.reimbursement_bundle_deliveries.reimbursement_type_key.type",
+        "s|colprop|public.reimbursement_bundle_deliveries.reimbursement_type_key.default"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_bundle_deliveries",
+        "n|sch|public",
+        "n|col|public.reimbursement_bundle_deliveries.reimbursement_type_key",
+        "n|enum|public.reimbursement_type_key"
+      ],
+      "sqlHash": "bbaa0eb33953f2cc"
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "contracts"],
+      "writes": [
+        "s|fk|public.contracts.contracts_reimbursement_type_key_reimbursement_types_key_fkey",
+        "n|fk|public.contracts.contracts_reimbursement_type_key_reimbursement_types_key_fkey",
+        "e|fk|public.contracts.contracts_reimbursement_type_key_reimbursement_types_key_fkey",
+        "n|con|public.contracts.contracts_reimbursement_type_key_reimbursement_types_key_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.contracts",
+        "n|sch|public",
+        "n|tbl|public.reimbursement_types",
+        "n|sch|public",
+        "n|col|public.contracts.reimbursement_type_key",
+        "n|col|public.reimbursement_types.key",
+        "e|uniqueness|public.reimbursement_types.key"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "document_templates"],
+      "writes": [
+        "s|fk|public.document_templates.document_templates_u5qLU2xFXFt0_fkey",
+        "n|fk|public.document_templates.document_templates_u5qLU2xFXFt0_fkey",
+        "e|fk|public.document_templates.document_templates_u5qLU2xFXFt0_fkey",
+        "n|con|public.document_templates.document_templates_u5qLU2xFXFt0_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.document_templates",
+        "n|sch|public",
+        "n|tbl|public.reimbursement_types",
+        "n|sch|public",
+        "n|col|public.document_templates.reimbursement_type_key",
+        "n|col|public.reimbursement_types.key",
+        "e|uniqueness|public.reimbursement_types.key"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "invoices"],
+      "writes": [
+        "s|fk|public.invoices.invoices_reimbursement_type_key_reimbursement_types_key_fkey",
+        "n|fk|public.invoices.invoices_reimbursement_type_key_reimbursement_types_key_fkey",
+        "e|fk|public.invoices.invoices_reimbursement_type_key_reimbursement_types_key_fkey",
+        "n|con|public.invoices.invoices_reimbursement_type_key_reimbursement_types_key_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.invoices",
+        "n|sch|public",
+        "n|tbl|public.reimbursement_types",
+        "n|sch|public",
+        "n|col|public.invoices.reimbursement_type_key",
+        "n|col|public.reimbursement_types.key",
+        "e|uniqueness|public.reimbursement_types.key"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "reimbursement_bundle_deliveries"],
+      "writes": [
+        "s|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_iQ5y6EOj6Mfl_fkey",
+        "n|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_iQ5y6EOj6Mfl_fkey",
+        "e|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_iQ5y6EOj6Mfl_fkey",
+        "n|con|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_iQ5y6EOj6Mfl_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_bundle_deliveries",
+        "n|sch|public",
+        "n|tbl|public.reimbursement_types",
+        "n|sch|public",
+        "n|col|public.reimbursement_bundle_deliveries.reimbursement_type_key",
+        "n|col|public.reimbursement_types.key",
+        "e|uniqueness|public.reimbursement_types.key"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "reimbursement_bundle_downloads"],
+      "writes": [
+        "s|fk|public.reimbursement_bundle_downloads.reimbursement_bundle_downloads_hZvBXBun6Y0y_fkey",
+        "n|fk|public.reimbursement_bundle_downloads.reimbursement_bundle_downloads_hZvBXBun6Y0y_fkey",
+        "e|fk|public.reimbursement_bundle_downloads.reimbursement_bundle_downloads_hZvBXBun6Y0y_fkey",
+        "n|con|public.reimbursement_bundle_downloads.reimbursement_bundle_downloads_hZvBXBun6Y0y_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_bundle_downloads",
+        "n|sch|public",
+        "n|tbl|public.reimbursement_types",
+        "n|sch|public",
+        "n|col|public.reimbursement_bundle_downloads.reimbursement_type_key",
+        "n|col|public.reimbursement_types.key",
+        "e|uniqueness|public.reimbursement_types.key"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "reimbursement_manual_baselines"],
+      "writes": [
+        "s|fk|public.reimbursement_manual_baselines.reimbursement_manual_baselines_FloNSSx07KP3_fkey",
+        "n|fk|public.reimbursement_manual_baselines.reimbursement_manual_baselines_FloNSSx07KP3_fkey",
+        "e|fk|public.reimbursement_manual_baselines.reimbursement_manual_baselines_FloNSSx07KP3_fkey",
+        "n|con|public.reimbursement_manual_baselines.reimbursement_manual_baselines_FloNSSx07KP3_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_manual_baselines",
+        "n|sch|public",
+        "n|tbl|public.reimbursement_types",
+        "n|sch|public",
+        "n|col|public.reimbursement_manual_baselines.reimbursement_type_key",
+        "n|col|public.reimbursement_types.key",
+        "e|uniqueness|public.reimbursement_types.key"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "reimbursement_rates"],
+      "writes": [
+        "s|fk|public.reimbursement_rates.reimbursement_rates_WXcsgTnVo6Md_fkey",
+        "n|fk|public.reimbursement_rates.reimbursement_rates_WXcsgTnVo6Md_fkey",
+        "e|fk|public.reimbursement_rates.reimbursement_rates_WXcsgTnVo6Md_fkey",
+        "n|con|public.reimbursement_rates.reimbursement_rates_WXcsgTnVo6Md_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_rates",
+        "n|sch|public",
+        "n|tbl|public.reimbursement_types",
+        "n|sch|public",
+        "n|col|public.reimbursement_rates.reimbursement_type_key",
+        "n|col|public.reimbursement_types.key",
+        "e|uniqueness|public.reimbursement_types.key"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "shifts"],
+      "writes": [
+        "s|fk|public.shifts.shifts_reimbursement_type_key_reimbursement_types_key_fkey",
+        "n|fk|public.shifts.shifts_reimbursement_type_key_reimbursement_types_key_fkey",
+        "e|fk|public.shifts.shifts_reimbursement_type_key_reimbursement_types_key_fkey",
+        "n|con|public.shifts.shifts_reimbursement_type_key_reimbursement_types_key_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.shifts",
+        "n|sch|public",
+        "n|tbl|public.reimbursement_types",
+        "n|sch|public",
+        "n|col|public.shifts.reimbursement_type_key",
+        "n|col|public.reimbursement_types.key",
+        "e|uniqueness|public.reimbursement_types.key"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "shift_instances"],
+      "writes": [
+        "s|fk|public.shift_instances.shift_instances_iSRIYnk56k4h_fkey",
+        "n|fk|public.shift_instances.shift_instances_iSRIYnk56k4h_fkey",
+        "e|fk|public.shift_instances.shift_instances_iSRIYnk56k4h_fkey",
+        "n|con|public.shift_instances.shift_instances_iSRIYnk56k4h_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.shift_instances",
+        "n|sch|public",
+        "n|tbl|public.reimbursement_types",
+        "n|sch|public",
+        "n|col|public.shift_instances.override_reimbursement_type_key",
+        "n|col|public.reimbursement_types.key",
+        "e|uniqueness|public.reimbursement_types.key"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "time_entries"],
+      "writes": [
+        "s|fk|public.time_entries.time_entries_4MweV9u9xVMF_fkey",
+        "n|fk|public.time_entries.time_entries_4MweV9u9xVMF_fkey",
+        "e|fk|public.time_entries.time_entries_4MweV9u9xVMF_fkey",
+        "n|con|public.time_entries.time_entries_4MweV9u9xVMF_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.time_entries",
+        "n|sch|public",
+        "n|tbl|public.reimbursement_types",
+        "n|sch|public",
+        "n|col|public.time_entries.reimbursement_type_key",
+        "n|col|public.reimbursement_types.key",
+        "e|uniqueness|public.reimbursement_types.key"
+      ]
+    },
+    {
+      "statementType": "alter_check",
+      "statementTarget": ["table", "public", "time_entries"],
+      "writes": [
+        "s|ck|public.time_entries.chk_time_entries_paid_requires_reimbursement_type"
+      ],
+      "reads": [
+        "n|tbl|public.time_entries",
+        "n|sch|public",
+        "n|col|public.time_entries.is_paid",
+        "n|col|public.time_entries.reimbursement_type_key",
+        "e|col|public.time_entries.is_paid"
+      ],
+      "sqlHash": "c2d6162a0f62b188"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "rename",
+      "key": "columns\u0000[\"public\",\"contracts\",\"reimbursement_type_id\"]",
+      "set": {
+        "name": "reimbursement_type_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "columns\u0000[\"public\",\"document_templates\",\"reimbursement_type_id\"]",
+      "set": {
+        "name": "reimbursement_type_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "columns\u0000[\"public\",\"invoices\",\"reimbursement_type_id\"]",
+      "set": {
+        "name": "reimbursement_type_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "columns\u0000[\"public\",\"reimbursement_bundle_deliveries\",\"reimbursement_type_id\"]",
+      "set": {
+        "name": "reimbursement_type_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "columns\u0000[\"public\",\"reimbursement_bundle_downloads\",\"reimbursement_type_id\"]",
+      "set": {
+        "name": "reimbursement_type_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "columns\u0000[\"public\",\"reimbursement_manual_baselines\",\"reimbursement_type_id\"]",
+      "set": {
+        "name": "reimbursement_type_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "columns\u0000[\"public\",\"reimbursement_rates\",\"reimbursement_type_id\"]",
+      "set": {
+        "name": "reimbursement_type_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "columns\u0000[\"public\",\"shifts\",\"reimbursement_type_id\"]",
+      "set": {
+        "name": "reimbursement_type_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "columns\u0000[\"public\",\"shift_instances\",\"override_reimbursement_type_id\"]",
+      "set": {
+        "name": "override_reimbursement_type_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "columns\u0000[\"public\",\"time_entries\",\"reimbursement_type_id\"]",
+      "set": {
+        "name": "reimbursement_type_key"
+      }
+    },
+    {
+      "op": "rename",
+      "key": "indexes\u0000[\"public\",\"idx_shifts_reimbursement_type_id\"]",
+      "set": {
+        "name": "idx_shifts_reimbursement_type_key"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "contracts",
+        "name": "contracts_reimbursement_type_key_reimbursement_types_key_fkey",
+        "nameExplicit": false,
+        "columns": ["reimbursement_type_key"],
+        "schemaTo": "public",
+        "tableTo": "reimbursement_types",
+        "columnsTo": ["key"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "document_templates",
+        "name": "document_templates_u5qLU2xFXFt0_fkey",
+        "nameExplicit": false,
+        "columns": ["reimbursement_type_key"],
+        "schemaTo": "public",
+        "tableTo": "reimbursement_types",
+        "columnsTo": ["key"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "invoices",
+        "name": "invoices_reimbursement_type_key_reimbursement_types_key_fkey",
+        "nameExplicit": false,
+        "columns": ["reimbursement_type_key"],
+        "schemaTo": "public",
+        "tableTo": "reimbursement_types",
+        "columnsTo": ["key"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "reimbursement_bundle_deliveries_iQ5y6EOj6Mfl_fkey",
+        "nameExplicit": false,
+        "columns": ["reimbursement_type_key"],
+        "schemaTo": "public",
+        "tableTo": "reimbursement_types",
+        "columnsTo": ["key"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_downloads",
+        "name": "reimbursement_bundle_downloads_hZvBXBun6Y0y_fkey",
+        "nameExplicit": false,
+        "columns": ["reimbursement_type_key"],
+        "schemaTo": "public",
+        "tableTo": "reimbursement_types",
+        "columnsTo": ["key"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_manual_baselines",
+        "name": "reimbursement_manual_baselines_FloNSSx07KP3_fkey",
+        "nameExplicit": false,
+        "columns": ["reimbursement_type_key"],
+        "schemaTo": "public",
+        "tableTo": "reimbursement_types",
+        "columnsTo": ["key"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_rates",
+        "name": "reimbursement_rates_WXcsgTnVo6Md_fkey",
+        "nameExplicit": false,
+        "columns": ["reimbursement_type_key"],
+        "schemaTo": "public",
+        "tableTo": "reimbursement_types",
+        "columnsTo": ["key"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "shifts",
+        "name": "shifts_reimbursement_type_key_reimbursement_types_key_fkey",
+        "nameExplicit": false,
+        "columns": ["reimbursement_type_key"],
+        "schemaTo": "public",
+        "tableTo": "reimbursement_types",
+        "columnsTo": ["key"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "shift_instances",
+        "name": "shift_instances_iSRIYnk56k4h_fkey",
+        "nameExplicit": false,
+        "columns": ["override_reimbursement_type_key"],
+        "schemaTo": "public",
+        "tableTo": "reimbursement_types",
+        "columnsTo": ["key"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "time_entries",
+        "name": "time_entries_4MweV9u9xVMF_fkey",
+        "nameExplicit": false,
+        "columns": ["reimbursement_type_key"],
+        "schemaTo": "public",
+        "tableTo": "reimbursement_types",
+        "columnsTo": ["key"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"reimbursement_types\",\"id\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"contracts\",\"contracts_reimbursement_type_id_reimbursement_types_id_fkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"document_templates\",\"document_templates_dBOb81rs3ftQ_fkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"invoices\",\"invoices_reimbursement_type_id_reimbursement_types_id_fkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"reimbursement_rates\",\"reimbursement_rates_RDd1dX429TuF_fkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"time_entries\",\"time_entries_reimbursement_type_id_reimbursement_types_id_fkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"reimbursement_bundle_downloads\",\"reimbursement_bundle_downloads_wYr9Yo32WOYe_fkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"reimbursement_manual_baselines\",\"reimbursement_manual_baselines_UkklTF5FXBMJ_fkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"shifts\",\"shifts_reimbursement_type_id_reimbursement_types_id_fkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"shift_instances\",\"shift_instances_vqbeHnPUINmZ_fkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"reimbursement_bundle_deliveries\",\"reimbursement_bundle_deliveries_6VhCMas4r3gf_fkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "uniques\u0000[\"public\",\"reimbursement_types\",\"uq_reimbursement_types_key\"]"
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"contracts\",\"reimbursement_type_key\"]",
+      "set": {
+        "type": "reimbursement_type_key",
+        "typeSchema": "public"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"document_templates\",\"reimbursement_type_key\"]",
+      "set": {
+        "type": "reimbursement_type_key",
+        "typeSchema": "public"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"invoices\",\"reimbursement_type_key\"]",
+      "set": {
+        "type": "reimbursement_type_key",
+        "typeSchema": "public"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"reimbursement_rates\",\"reimbursement_type_key\"]",
+      "set": {
+        "type": "reimbursement_type_key",
+        "typeSchema": "public"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"time_entries\",\"reimbursement_type_key\"]",
+      "set": {
+        "type": "reimbursement_type_key",
+        "typeSchema": "public"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"reimbursement_bundle_downloads\",\"reimbursement_type_key\"]",
+      "set": {
+        "type": "reimbursement_type_key",
+        "typeSchema": "public"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"reimbursement_manual_baselines\",\"reimbursement_type_key\"]",
+      "set": {
+        "type": "reimbursement_type_key",
+        "typeSchema": "public"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"shifts\",\"reimbursement_type_key\"]",
+      "set": {
+        "type": "reimbursement_type_key",
+        "typeSchema": "public"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"shift_instances\",\"override_reimbursement_type_key\"]",
+      "set": {
+        "type": "reimbursement_type_key",
+        "typeSchema": "public"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"reimbursement_bundle_deliveries\",\"reimbursement_type_key\"]",
+      "set": {
+        "type": "reimbursement_type_key",
+        "typeSchema": "public"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"reimbursement_types\",\"reimbursement_types_pkey\"]",
+      "set": {
+        "columns": ["key"]
+      }
+    },
+    {
+      "op": "alter",
+      "key": "checks\u0000[\"public\",\"time_entries\",\"chk_time_entries_paid_requires_reimbursement_type\"]",
+      "set": {
+        "value": "\"is_paid\" = false OR \"reimbursement_type_key\" IS NOT NULL"
+      }
+    }
+  ]
+}

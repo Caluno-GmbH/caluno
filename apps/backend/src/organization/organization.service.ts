@@ -186,6 +186,19 @@ export class OrganizationService {
     return this.expandToChildOrgUnits(administrableMemberships);
   }
 
+  /**
+   * Whether the user holds the permission in the unit, directly or inherited
+   * from an ancestor (same reach as {@link findUnitsWithPermission}).
+   */
+  async hasPermissionInUnit(
+    userId: string,
+    permissionKey: Permission,
+    organizationUnitId: string,
+  ): Promise<boolean> {
+    const units = await this.findUnitsWithPermission(userId, permissionKey);
+    return units.some((unit) => unit.id === organizationUnitId);
+  }
+
   async findUnitsWithPermission(
     userId: string,
     permissionKey: Permission,

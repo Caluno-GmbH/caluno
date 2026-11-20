@@ -1,4 +1,4 @@
-import { DocumentKind } from '../../../accounting/enums';
+import { DocumentKind, ReimbursementTypeKey } from '../../../accounting/enums';
 import { PermissionKey } from '../../../auth/enums';
 import { TaskType } from '../enums/task-type.enum';
 import type { Task } from '../models/task.model';
@@ -7,8 +7,7 @@ export interface ContractTaskRow {
   id: string;
   volunteerId: string;
   volunteerName: string;
-  reimbursementTypeId: string;
-  reimbursementTypeKey: string;
+  reimbursementTypeKey: ReimbursementTypeKey;
   periodStart: Date;
   periodEnd: Date;
   status: string;
@@ -21,7 +20,7 @@ export interface ContractTaskRow {
 /** Year bounds + which volunteer×type pairs already have a non-declined contract. */
 export interface CreateContractGenerateOptions {
   yearPeriod: { start: Date; end: Date };
-  /** Keys are `${volunteerId}|${reimbursementTypeId}`. */
+  /** Keys are `${volunteerId}|${reimbursementTypeKey}`. */
   pairsWithOpenContract: ReadonlySet<string>;
 }
 
@@ -35,8 +34,7 @@ export interface InvoiceTaskRow extends ContractTaskRow {
 export interface TimesheetCreateRow {
   volunteerId: string;
   volunteerName: string;
-  reimbursementTypeId: string;
-  reimbursementTypeKey: string;
+  reimbursementTypeKey: ReimbursementTypeKey;
   periodStart: Date;
   periodEnd: Date;
   eligibleHours: number;
@@ -49,8 +47,7 @@ export interface TimesheetCreateRow {
 export interface PaidShiftSignupRow {
   volunteerId: string;
   volunteerName: string;
-  reimbursementTypeId: string;
-  reimbursementTypeKey: string;
+  reimbursementTypeKey: ReimbursementTypeKey;
   periodStart: Date;
   periodEnd: Date;
 }
@@ -193,7 +190,7 @@ export function createContractGenerateTasks(
     periodEnd: Date,
     sortAt: number,
   ) => {
-    const pair = `${row.volunteerId}|${row.reimbursementTypeId}`;
+    const pair = `${row.volunteerId}|${row.reimbursementTypeKey}`;
     const current = byPair.get(pair);
     if (current && current.sortAt <= sortAt) return;
     byPair.set(pair, {
@@ -211,7 +208,7 @@ export function createContractGenerateTasks(
   // Branch 1: uncovered month per pair (earliest firstUncoveredAt wins).
   const firstEligibleByPair = new Map<string, TimesheetCreateRow>();
   for (const row of timesheets) {
-    const pair = `${row.volunteerId}|${row.reimbursementTypeId}`;
+    const pair = `${row.volunteerId}|${row.reimbursementTypeKey}`;
     if (!firstEligibleByPair.has(pair)) firstEligibleByPair.set(pair, row);
     if (!row.hasUncoveredHours) continue;
     consider(
@@ -225,7 +222,7 @@ export function createContractGenerateTasks(
   // Branch 2: paid-shift month per pair (earliest periodStart wins).
   const pairsWithUncoveredHours = new Set(byPair.keys());
   for (const row of paidShiftSignups) {
-    const pair = `${row.volunteerId}|${row.reimbursementTypeId}`;
+    const pair = `${row.volunteerId}|${row.reimbursementTypeKey}`;
     if (pairsWithUncoveredHours.has(pair)) continue;
     consider(row, row.periodStart, row.periodEnd, row.periodStart.getTime());
   }

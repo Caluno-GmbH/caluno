@@ -86,7 +86,7 @@ export class AccountingController {
       organizationId,
       organizationUnitId,
       query.volunteerId,
-      query.reimbursementTypeId,
+      query.reimbursementTypeKey,
       session.user.id,
       query.invoiceIds,
     );

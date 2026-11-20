@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { ReimbursementTypeKey } from '@repo/data';
 import {
   useCurrentOrg,
   useOrganizationUnit,
@@ -481,20 +482,22 @@ export const ShiftForm = ({
 
       {accountingEnabled && (
         <Field>
-          <FieldLabel htmlFor="reimbursementTypeId">
+          <FieldLabel htmlFor="reimbursementTypeKey">
             {t('form.reimbursementTypeLabel')}
           </FieldLabel>
           <Select
-            value={watch('reimbursementTypeId') ?? NO_REIMBURSEMENT_TYPE}
+            value={watch('reimbursementTypeKey') ?? NO_REIMBURSEMENT_TYPE}
             onValueChange={(value) =>
               setValue(
-                'reimbursementTypeId',
-                value === NO_REIMBURSEMENT_TYPE ? null : value,
+                'reimbursementTypeKey',
+                value === NO_REIMBURSEMENT_TYPE
+                  ? null
+                  : (value as ReimbursementTypeKey),
               )
             }
             disabled={pending}
           >
-            <SelectTrigger id="reimbursementTypeId" className="w-full">
+            <SelectTrigger id="reimbursementTypeKey" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -502,7 +505,7 @@ export const ShiftForm = ({
                 {t('form.reimbursementTypeNone')}
               </SelectItem>
               {(reimbursementTypes ?? []).map((type) => (
-                <SelectItem key={type.id} value={type.id}>
+                <SelectItem key={type.key} value={type.key}>
                   {tPauschale(
                     pauschaleForReimbursementTypeKey(type.key) === 'ehrenamt'
                       ? 'typeEP'

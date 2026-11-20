@@ -118,7 +118,7 @@ describe('TimeEntryClosedListener', () => {
     for (const kind of [DocumentKind.INVOICE, DocumentKind.CONTRACT]) {
       await createTwoStepTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         kind,
         requiredPermissionId: permission.id,
         signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER],
@@ -129,7 +129,7 @@ describe('TimeEntryClosedListener', () => {
       createCompletedTimeEntry(db, {
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date(`${day}T09:00:00.000Z`),
         endedAt: new Date(`${day}T12:00:00.000Z`),
       });
@@ -160,7 +160,7 @@ describe('TimeEntryClosedListener', () => {
     const contracts = await db.query.contracts.findMany({
       where: {
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
       },
     });
     expect(contracts).toHaveLength(1);

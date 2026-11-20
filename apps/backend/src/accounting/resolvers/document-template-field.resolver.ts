@@ -56,7 +56,7 @@ export class DocumentTemplateFieldResolver {
         template.reimbursementType,
       );
     }
-    return loader.reimbursementTypeById.load(template.reimbursementTypeId);
+    return loader.reimbursementTypeById.load(template.reimbursementTypeKey);
   }
 
   @ResolveField(() => User, { nullable: true })

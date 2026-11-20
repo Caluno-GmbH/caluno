@@ -96,7 +96,7 @@ export async function seedDemoAccounting(
       }
       const template = await ensureTemplate(db, {
         organizationId: org.organizationId,
-        reimbursementTypeId: type.id,
+        reimbursementTypeKey: type.key,
         kind,
         body,
         editorId: coordinatorId,
@@ -166,7 +166,7 @@ export async function seedDemoAccounting(
     db,
     unitId,
     coordinatorId,
-    reimbursementTypeId: ehrenamt.id,
+    reimbursementTypeKey: ehrenamt.key,
     hourlyRateCents: ehrenamt.platformDefaultRateCents,
     contractTemplate,
     invoiceTemplate,
@@ -216,7 +216,7 @@ export async function seedDemoAccounting(
       .values({
         organizationId: org.organizationId,
         volunteerId: overLimit.id,
-        reimbursementTypeId: ehrenamt.id,
+        reimbursementTypeKey: ehrenamt.key,
         year: timesheetMonth.year,
         amountCents: ehrenamt.yearlyLimitCents,
         updatedByUserId: coordinatorId,
@@ -269,7 +269,7 @@ export async function seedDemoAccounting(
         id: deliveryId,
         organizationUnitId: unitId,
         volunteerId: member.id,
-        reimbursementTypeId: ehrenamt.id,
+        reimbursementTypeKey: ehrenamt.key,
         method: delivery.method,
         invoiceIds: [invoiceId],
         recipientEmail: isEmail ? ACCOUNTING_EMAIL : null,
@@ -290,7 +290,7 @@ export async function seedDemoAccounting(
           .insert(schema.reimbursementBundleDownloads)
           .values({
             volunteerId: member.id,
-            reimbursementTypeId: ehrenamt.id,
+            reimbursementTypeKey: ehrenamt.key,
             downloadedAt: occurredAt,
             downloadedByUserId: coordinatorId,
           })
@@ -346,7 +346,7 @@ async function ensureTemplate(
   db: Database,
   args: {
     organizationId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeKey: ReimbursementTypeKey;
     kind: DocumentKind;
     body: typeof schema.documentTemplates.$inferInsert.body;
     editorId: string;
@@ -356,7 +356,7 @@ async function ensureTemplate(
   const existing = await db.query.documentTemplates.findFirst({
     where: {
       organizationId: args.organizationId,
-      reimbursementTypeId: args.reimbursementTypeId,
+      reimbursementTypeKey: args.reimbursementTypeKey,
       kind: args.kind,
       organizationUnitId: { isNull: true },
       isDeleted: false,
@@ -369,7 +369,7 @@ async function ensureTemplate(
       .insert(schema.documentTemplates)
       .values({
         organizationId: args.organizationId,
-        reimbursementTypeId: args.reimbursementTypeId,
+        reimbursementTypeKey: args.reimbursementTypeKey,
         kind: args.kind,
         body: args.body,
         lastEditedAt: new Date(),
@@ -400,7 +400,7 @@ interface DocumentContext {
   db: Database;
   unitId: string;
   coordinatorId: string;
-  reimbursementTypeId: string;
+  reimbursementTypeKey: ReimbursementTypeKey;
   hourlyRateCents: number;
   contractTemplate: typeof schema.documentTemplates.$inferSelect;
   invoiceTemplate: typeof schema.documentTemplates.$inferSelect;
@@ -441,7 +441,7 @@ async function ensureActiveContract(
       id,
       documentTemplateId: ctx.contractTemplate.id,
       volunteerId,
-      reimbursementTypeId: ctx.reimbursementTypeId,
+      reimbursementTypeKey: ctx.reimbursementTypeKey,
       organizationUnitId: ctx.unitId,
       contractStatus: ContractStatus.ACTIVE,
       periodStart: period.start,
@@ -483,7 +483,7 @@ async function ensureReadyTimesheet(
       id: demoId(`time-entry:${key}:${index}`),
       organizationUnitId: ctx.unitId,
       volunteerId,
-      reimbursementTypeId: ctx.reimbursementTypeId,
+      reimbursementTypeKey: ctx.reimbursementTypeKey,
       createdById: ctx.coordinatorId,
       startedAt,
       endedAt: addHours(startedAt, share),
@@ -499,7 +499,7 @@ async function ensureReadyTimesheet(
       id,
       documentTemplateId: ctx.invoiceTemplate.id,
       volunteerId,
-      reimbursementTypeId: ctx.reimbursementTypeId,
+      reimbursementTypeKey: ctx.reimbursementTypeKey,
       organizationUnitId: ctx.unitId,
       invoiceStatus: InvoiceStatus.READY,
       periodStart,

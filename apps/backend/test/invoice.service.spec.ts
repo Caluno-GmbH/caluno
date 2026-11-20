@@ -202,14 +202,14 @@ describe('InvoiceService', () => {
     });
     await createTwoStepTemplate(db, {
       organizationId: organization.id,
-      reimbursementTypeId: reimbursementType.id,
+      reimbursementTypeKey: reimbursementType.key,
       kind: DocumentKind.INVOICE,
       requiredPermissionId: permission.id,
       signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER],
     });
     const contractTemplate = await createTwoStepTemplate(db, {
       organizationId: organization.id,
-      reimbursementTypeId: reimbursementType.id,
+      reimbursementTypeKey: reimbursementType.key,
       kind: DocumentKind.CONTRACT,
       requiredPermissionId: permission.id,
       signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER],
@@ -218,7 +218,7 @@ describe('InvoiceService', () => {
     const timeEntry = await createCompletedTimeEntry(db, {
       organizationUnitId: root.id,
       volunteerId: volunteer.id,
-      reimbursementTypeId: reimbursementType.id,
+      reimbursementTypeKey: reimbursementType.key,
       startedAt: new Date('2026-07-01T09:00:00.000Z'),
       endedAt: new Date('2026-07-01T13:00:00.000Z'), // 4 hours
     });
@@ -271,7 +271,7 @@ describe('InvoiceService', () => {
     db.insert(schema.contracts).values({
       documentTemplateId: s.contractTemplate.id,
       volunteerId: s.volunteer.id,
-      reimbursementTypeId: s.reimbursementType.id,
+      reimbursementTypeKey: s.reimbursementType.key,
       organizationUnitId: options.unitId ?? s.root.id,
       contractStatus: options.status ?? ContractStatus.ACTIVE,
       periodStart: new Date(period.start),
@@ -283,7 +283,7 @@ describe('InvoiceService', () => {
     createCompletedTimeEntry(db, {
       organizationUnitId: s.root.id,
       volunteerId: s.volunteer.id,
-      reimbursementTypeId: s.reimbursementType.id,
+      reimbursementTypeKey: s.reimbursementType.key,
       startedAt: new Date(startedAt),
       endedAt: new Date(new Date(startedAt).getTime() + 2 * 3_600_000),
     });
@@ -299,7 +299,7 @@ describe('InvoiceService', () => {
       {
         organizationUnitId: unitId,
         volunteerId: s.volunteer.id,
-        reimbursementTypeId: s.reimbursementType.id,
+        reimbursementTypeKey: s.reimbursementType.key,
         timeEntryIds,
         periodStart: new Date(period.start),
         periodEnd: new Date(period.end),
@@ -311,7 +311,7 @@ describe('InvoiceService', () => {
     db.query.contracts.findMany({
       where: {
         volunteerId: s.volunteer.id,
-        reimbursementTypeId: s.reimbursementType.id,
+        reimbursementTypeKey: s.reimbursementType.key,
         contractStatus: ContractStatus.DRAFT,
       },
     });
@@ -349,14 +349,14 @@ describe('InvoiceService', () => {
       const marchTimeEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2026-03-02T09:00:00.000Z'),
         endedAt: new Date('2026-03-02T13:00:00.000Z'),
       });
       const outOfRangeTimeEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2026-06-01T09:00:00.000Z'),
         endedAt: new Date('2026-06-01T13:00:00.000Z'),
       });
@@ -366,7 +366,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [marchTimeEntry.id],
           periodStart: new Date('2026-03-01'),
           periodEnd: new Date('2026-03-31'),
@@ -378,7 +378,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [outOfRangeTimeEntry.id],
           periodStart: new Date('2026-06-01'),
           periodEnd: new Date('2026-06-30'),
@@ -417,7 +417,7 @@ describe('InvoiceService', () => {
       const siblingEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: sibling.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2026-07-02T09:00:00.000Z'),
         endedAt: new Date('2026-07-02T13:00:00.000Z'),
       });
@@ -427,7 +427,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01'),
           periodEnd: new Date('2026-07-31'),
@@ -439,7 +439,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: sibling.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [siblingEntry.id],
           periodStart: new Date('2026-07-01'),
           periodEnd: new Date('2026-07-31'),
@@ -464,7 +464,7 @@ describe('InvoiceService', () => {
       const lastEvening = await createCompletedTimeEntry(db, {
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2026-07-31T21:30:00.000Z'),
         endedAt: new Date('2026-07-31T21:50:00.000Z'),
       });
@@ -473,7 +473,7 @@ describe('InvoiceService', () => {
       const nextMonth = await createCompletedTimeEntry(db, {
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2026-07-31T22:30:00.000Z'),
         endedAt: new Date('2026-07-31T23:00:00.000Z'),
       });
@@ -481,7 +481,7 @@ describe('InvoiceService', () => {
       const july = billingMonthBoundsOf(new Date('2026-07-15T12:00:00.000Z'));
       const eligible = await service.findEligibleTimeEntries(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         root.id,
         july.start,
         july.end,
@@ -506,19 +506,19 @@ describe('InvoiceService', () => {
       const siblingEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: sibling.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2026-07-02T09:00:00.000Z'),
         endedAt: new Date('2026-07-02T13:00:00.000Z'),
       });
 
       const eligibleForRoot = await service.findEligibleTimeEntries(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         root.id,
       );
       const eligibleForSibling = await service.findEligibleTimeEntries(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         sibling.id,
       );
 
@@ -544,7 +544,7 @@ describe('InvoiceService', () => {
       const siblingEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: sibling.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2026-07-02T09:00:00.000Z'),
         endedAt: new Date('2026-07-02T13:00:00.000Z'),
       });
@@ -555,7 +555,7 @@ describe('InvoiceService', () => {
           {
             organizationUnitId: root.id,
             volunteerId: volunteer.id,
-            reimbursementTypeId: reimbursementType.id,
+            reimbursementTypeKey: reimbursementType.key,
             timeEntryIds: [siblingEntry.id],
             periodStart: new Date('2026-07-01T00:00:00.000Z'),
             periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -576,14 +576,14 @@ describe('InvoiceService', () => {
         shiftInstanceId: instance.id,
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date(),
         endedAt: null,
       });
 
       const eligible = await service.findEligibleTimeEntries(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         root.id,
       );
       expect(eligible.every((entry) => entry.endedAt !== null)).toBe(true);
@@ -604,7 +604,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -614,7 +614,7 @@ describe('InvoiceService', () => {
 
       const eligible = await service.findEligibleTimeEntries(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         root.id,
       );
       expect(eligible.map((e) => e.id)).not.toContain(timeEntry.id);
@@ -635,7 +635,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -651,7 +651,7 @@ describe('InvoiceService', () => {
 
       const eligible = await service.findEligibleTimeEntries(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         root.id,
       );
       expect(eligible.map((e) => e.id)).toContain(timeEntry.id);
@@ -672,7 +672,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -691,7 +691,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -708,7 +708,7 @@ describe('InvoiceService', () => {
       // No longer selectable now that a live invoice holds it again.
       const eligible = await service.findEligibleTimeEntries(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         root.id,
       );
       expect(eligible.map((e) => e.id)).not.toContain(timeEntry.id);
@@ -718,14 +718,14 @@ describe('InvoiceService', () => {
       const autoClosed = await createAutoClosedTimeEntry({
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2026-07-02T09:00:00.000Z'),
         endedAt: new Date('2026-07-02T13:00:00.000Z'),
       });
 
       const eligible = await service.findEligibleTimeEntries(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         root.id,
       );
 
@@ -749,7 +749,7 @@ describe('InvoiceService', () => {
       const base = {
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
       };
       const awaiting = await createAutoClosedTimeEntry({
         ...base,
@@ -766,7 +766,7 @@ describe('InvoiceService', () => {
       });
       const wrongType = await createAutoClosedTimeEntry({
         ...base,
-        reimbursementTypeId: otherType.id,
+        reimbursementTypeKey: otherType.key,
         startedAt: new Date('2026-07-03T09:00:00.000Z'),
         endedAt: new Date('2026-07-03T13:00:00.000Z'),
       });
@@ -794,7 +794,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -809,7 +809,7 @@ describe('InvoiceService', () => {
       const july = billingMonthBoundsOf(new Date('2026-07-15T12:00:00.000Z'));
       const result = await service.findTimeEntriesAwaitingReview(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         root.id,
         july.start,
         july.end,
@@ -846,7 +846,7 @@ describe('InvoiceService', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         // July 2026 as a Berlin calendar month.
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
@@ -864,7 +864,7 @@ describe('InvoiceService', () => {
       await createAutoClosedTimeEntry({
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2026-07-02T09:00:00.000Z'),
         endedAt: new Date('2026-07-02T11:00:00.000Z'),
       });
@@ -887,7 +887,7 @@ describe('InvoiceService', () => {
         createCompletedTimeEntry(db, {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           startedAt: new Date(startedAt),
           endedAt: new Date(endedAt),
         });
@@ -909,7 +909,7 @@ describe('InvoiceService', () => {
       expect(rows).toEqual([
         {
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2026-06-30T22:00:00.000Z'),
           periodEnd: new Date('2026-07-31T22:00:00.000Z'),
           eligibleHours: 6.5,
@@ -919,7 +919,7 @@ describe('InvoiceService', () => {
         },
         {
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2026-07-31T22:00:00.000Z'),
           periodEnd: new Date('2026-08-31T22:00:00.000Z'),
           eligibleHours: 1,
@@ -944,7 +944,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -976,7 +976,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-06-30T22:00:00.000Z'),
           periodEnd: new Date('2026-07-31T22:00:00.000Z'),
@@ -999,7 +999,7 @@ describe('InvoiceService', () => {
       const row = result.find((r) => r.volunteerId === volunteer.id);
       expect(row).toEqual({
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
         eligibleHours: 4,
@@ -1023,7 +1023,7 @@ describe('InvoiceService', () => {
         shiftInstanceId: instance.id,
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2026-07-01T09:00:00.000Z'),
         endedAt: null,
       });
@@ -1066,7 +1066,7 @@ describe('InvoiceService', () => {
       await createCompletedTimeEntry(db, {
         organizationUnitId: otherRoot.id,
         volunteerId: otherVolunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2026-07-01T09:00:00.000Z'),
         endedAt: new Date('2026-07-01T13:00:00.000Z'),
       });
@@ -1204,7 +1204,7 @@ describe('InvoiceService', () => {
         await db.insert(schema.contracts).values({
           documentTemplateId: s.contractTemplate.id,
           volunteerId: other.id,
-          reimbursementTypeId: s.reimbursementType.id,
+          reimbursementTypeKey: s.reimbursementType.key,
           organizationUnitId: s.root.id,
           contractStatus: ContractStatus.ACTIVE,
           periodStart: new Date(JULY_TIMESHEET.start),
@@ -1238,7 +1238,7 @@ describe('InvoiceService', () => {
           await createCompletedTimeEntry(db, {
             organizationUnitId: s.root.id,
             volunteerId: volunteer.id,
-            reimbursementTypeId: s.reimbursementType.id,
+            reimbursementTypeKey: s.reimbursementType.key,
             startedAt: new Date('2026-07-10T09:00:00.000Z'),
             endedAt: new Date('2026-07-10T11:00:00.000Z'),
           });
@@ -1270,7 +1270,7 @@ describe('InvoiceService', () => {
           {
             organizationUnitId: root.id,
             volunteerId: volunteer.id,
-            reimbursementTypeId: reimbursementType.id,
+            reimbursementTypeKey: reimbursementType.key,
             timeEntryIds: [],
             periodStart: new Date(),
             periodEnd: new Date(),
@@ -1290,7 +1290,7 @@ describe('InvoiceService', () => {
           {
             organizationUnitId: root.id,
             volunteerId: volunteer.id,
-            reimbursementTypeId: reimbursementType.id,
+            reimbursementTypeKey: reimbursementType.key,
             timeEntryIds: [crypto.randomUUID()],
             periodStart: new Date(),
             periodEnd: new Date(),
@@ -1306,7 +1306,7 @@ describe('InvoiceService', () => {
       const autoClosed = await createAutoClosedTimeEntry({
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2026-07-02T09:00:00.000Z'),
         endedAt: new Date('2026-07-02T13:00:00.000Z'),
       });
@@ -1317,7 +1317,7 @@ describe('InvoiceService', () => {
           {
             organizationUnitId: root.id,
             volunteerId: volunteer.id,
-            reimbursementTypeId: reimbursementType.id,
+            reimbursementTypeKey: reimbursementType.key,
             timeEntryIds: [autoClosed.id],
             periodStart: new Date('2026-07-01T00:00:00.000Z'),
             periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -1344,7 +1344,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -1356,7 +1356,7 @@ describe('InvoiceService', () => {
       const baseline = await db.query.reimbursementManualBaselines.findFirst({
         where: {
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           year: 2026,
         },
       });
@@ -1378,7 +1378,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -1389,7 +1389,7 @@ describe('InvoiceService', () => {
       const baseline = await db.query.reimbursementManualBaselines.findFirst({
         where: {
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           year: 2026,
         },
       });
@@ -1412,7 +1412,7 @@ describe('InvoiceService', () => {
           {
             organizationUnitId: root.id,
             volunteerId: volunteer.id,
-            reimbursementTypeId: reimbursementType.id,
+            reimbursementTypeKey: reimbursementType.key,
             timeEntryIds: [timeEntry.id],
             periodStart: new Date('2026-07-01T00:00:00.000Z'),
             periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -1438,7 +1438,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -1467,7 +1467,7 @@ describe('InvoiceService', () => {
       );
       await reimbursementRateService.setReimbursementRate(
         organization.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2_000,
         supervisor.id,
       );
@@ -1477,7 +1477,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -1503,7 +1503,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -1529,7 +1529,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -1555,7 +1555,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -1573,7 +1573,7 @@ describe('InvoiceService', () => {
         new OrganizationUnitDataService(db),
         {} as MembershipService,
         { capture: () => {} } as unknown as PostHogService,
-      ).getEffectiveRateCents(organization.id, null, reimbursementType.id);
+      ).getEffectiveRateCents(organization.id, null, reimbursementType.key);
       expect(stillTheOrgRate).toBe(1_500);
     });
 
@@ -1593,7 +1593,7 @@ describe('InvoiceService', () => {
           {
             organizationUnitId: root.id,
             volunteerId: volunteer.id,
-            reimbursementTypeId: reimbursementType.id,
+            reimbursementTypeKey: reimbursementType.key,
             timeEntryIds: [timeEntry.id],
             periodStart: new Date('2026-07-01T00:00:00.000Z'),
             periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -1619,7 +1619,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -1645,7 +1645,7 @@ describe('InvoiceService', () => {
       const augustEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2026-08-03T09:00:00.000Z'),
         endedAt: new Date('2026-08-03T13:00:00.000Z'),
       });
@@ -1655,7 +1655,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -1667,7 +1667,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [augustEntry.id],
           periodStart: new Date('2026-08-01T00:00:00.000Z'),
           periodEnd: new Date('2026-08-31T00:00:00.000Z'),
@@ -1692,7 +1692,7 @@ describe('InvoiceService', () => {
       const januaryEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2027-01-05T09:00:00.000Z'),
         endedAt: new Date('2027-01-05T13:00:00.000Z'),
       });
@@ -1702,7 +1702,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -1714,7 +1714,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [januaryEntry.id],
           periodStart: new Date('2027-01-01T00:00:00.000Z'),
           periodEnd: new Date('2027-01-31T00:00:00.000Z'),
@@ -1750,7 +1750,7 @@ describe('InvoiceService', () => {
       const subEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: subUnit.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2026-08-03T09:00:00.000Z'),
         endedAt: new Date('2026-08-03T13:00:00.000Z'),
       });
@@ -1760,7 +1760,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -1772,7 +1772,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: subUnit.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [subEntry.id],
           periodStart: new Date('2026-08-01T00:00:00.000Z'),
           periodEnd: new Date('2026-08-31T00:00:00.000Z'),
@@ -1799,7 +1799,7 @@ describe('InvoiceService', () => {
       await db.insert(schema.contracts).values({
         documentTemplateId: contractTemplate.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: root.id,
         contractStatus: ContractStatus.ACTIVE,
         // Covers the invoice's July 2026 period.
@@ -1813,7 +1813,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -1839,7 +1839,7 @@ describe('InvoiceService', () => {
       await db.insert(schema.contracts).values({
         documentTemplateId: contractTemplate.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: root.id,
         contractStatus: ContractStatus.ACTIVE,
         // August 2026 as Berlin bounds — the invoice is for July.
@@ -1853,7 +1853,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -2001,7 +2001,7 @@ describe('InvoiceService', () => {
         await db.insert(schema.contracts).values({
           documentTemplateId: s.contractTemplate.id,
           volunteerId: other.id,
-          reimbursementTypeId: s.reimbursementType.id,
+          reimbursementTypeKey: s.reimbursementType.key,
           organizationUnitId: s.root.id,
           contractStatus: ContractStatus.ACTIVE,
           periodStart: new Date(JULY_TIMESHEET.start),
@@ -2256,7 +2256,7 @@ describe('InvoiceService', () => {
         const entry = await createCompletedTimeEntry(db, {
           organizationUnitId: sub.id,
           volunteerId: s.volunteer.id,
-          reimbursementTypeId: s.reimbursementType.id,
+          reimbursementTypeKey: s.reimbursementType.key,
           startedAt: new Date('2026-07-10T09:00:00.000Z'),
           endedAt: new Date('2026-07-10T11:00:00.000Z'),
         });
@@ -2286,7 +2286,7 @@ describe('InvoiceService', () => {
         const entry = await createCompletedTimeEntry(db, {
           organizationUnitId: sub.id,
           volunteerId: s.volunteer.id,
-          reimbursementTypeId: s.reimbursementType.id,
+          reimbursementTypeKey: s.reimbursementType.key,
           startedAt: new Date('2026-07-10T09:00:00.000Z'),
           endedAt: new Date('2026-07-10T11:00:00.000Z'),
         });
@@ -2404,7 +2404,7 @@ describe('InvoiceService', () => {
         const entry = await createCompletedTimeEntry(db, {
           organizationUnitId: sub.id,
           volunteerId: s.volunteer.id,
-          reimbursementTypeId: s.reimbursementType.id,
+          reimbursementTypeKey: s.reimbursementType.key,
           startedAt: new Date('2026-07-10T09:00:00.000Z'),
           endedAt: new Date('2026-07-10T11:00:00.000Z'),
         });
@@ -2489,7 +2489,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -2500,7 +2500,7 @@ describe('InvoiceService', () => {
       const contracts = await db.query.contracts.findMany({
         where: {
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
         },
       });
       expect(contracts).toHaveLength(1);
@@ -2521,7 +2521,7 @@ describe('InvoiceService', () => {
           createCompletedTimeEntry(db, {
             organizationUnitId: root.id,
             volunteerId: volunteer.id,
-            reimbursementTypeId: reimbursementType.id,
+            reimbursementTypeKey: reimbursementType.key,
             startedAt: new Date(`${day}T09:00:00.000Z`),
             endedAt: new Date(`${day}T11:00:00.000Z`),
           }),
@@ -2533,7 +2533,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id, ...more.map((entry) => entry.id)],
           periodStart: new Date('2026-06-30T22:00:00.000Z'),
           periodEnd: new Date('2026-07-31T22:00:00.000Z'),
@@ -2568,7 +2568,7 @@ describe('InvoiceService', () => {
           {
             organizationUnitId: root.id,
             volunteerId: volunteer.id,
-            reimbursementTypeId: reimbursementType.id,
+            reimbursementTypeKey: reimbursementType.key,
             timeEntryIds: [timeEntry.id],
             periodStart: new Date('2026-07-31T22:00:00.000Z'),
             periodEnd: new Date('2026-08-31T22:00:00.000Z'),
@@ -2590,14 +2590,14 @@ describe('InvoiceService', () => {
       const otherEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2026-07-05T09:00:00.000Z'),
         endedAt: new Date('2026-07-05T11:00:00.000Z'),
       });
       const period = {
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
       };
@@ -2639,7 +2639,7 @@ describe('InvoiceService', () => {
       const period = {
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
       };
@@ -2673,7 +2673,7 @@ describe('InvoiceService', () => {
       const augustEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2026-08-05T09:00:00.000Z'),
         endedAt: new Date('2026-08-05T11:00:00.000Z'),
       });
@@ -2683,7 +2683,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-06-30T22:00:00.000Z'),
           periodEnd: new Date('2026-07-31T22:00:00.000Z'),
@@ -2695,7 +2695,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [augustEntry.id],
           periodStart: new Date('2026-07-31T22:00:00.000Z'),
           periodEnd: new Date('2026-08-31T22:00:00.000Z'),
@@ -2721,7 +2721,7 @@ describe('InvoiceService', () => {
       const secondEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: timeEntry.organizationUnitId,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         // A different month, so the two timesheets do not overlap.
         startedAt: new Date('2026-08-02T09:00:00.000Z'),
         endedAt: new Date('2026-08-02T13:00:00.000Z'),
@@ -2732,7 +2732,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-06-30T22:00:00.000Z'),
           periodEnd: new Date('2026-07-31T22:00:00.000Z'),
@@ -2744,7 +2744,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [secondEntry.id],
           periodStart: new Date('2026-07-31T22:00:00.000Z'),
           periodEnd: new Date('2026-08-31T22:00:00.000Z'),
@@ -2755,7 +2755,7 @@ describe('InvoiceService', () => {
       const contracts = await db.query.contracts.findMany({
         where: {
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
         },
       });
       // VOLI-1585: with no lifespan on the template a draft covers the entry's
@@ -2783,14 +2783,14 @@ describe('InvoiceService', () => {
       const timeEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         startedAt: new Date('2027-07-01T09:00:00.000Z'),
         endedAt: new Date('2027-07-01T13:00:00.000Z'),
       });
       await db.insert(schema.contracts).values({
         documentTemplateId: contractTemplate.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: root.id,
         contractStatus: ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
         // The 2026 Berlin calendar year; its exclusive end is 1 Jan 2027 00:00 Berlin.
@@ -2804,7 +2804,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2027-07-01T00:00:00.000Z'),
           periodEnd: new Date('2027-07-31T00:00:00.000Z'),
@@ -2815,7 +2815,7 @@ describe('InvoiceService', () => {
       const contracts = await db.query.contracts.findMany({
         where: {
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
         },
       });
       expect(contracts).toHaveLength(2);
@@ -2840,7 +2840,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -2854,7 +2854,7 @@ describe('InvoiceService', () => {
           {
             organizationUnitId: root.id,
             volunteerId: volunteer.id,
-            reimbursementTypeId: reimbursementType.id,
+            reimbursementTypeKey: reimbursementType.key,
             timeEntryIds: [timeEntry.id],
             periodStart: new Date('2026-07-01T00:00:00.000Z'),
             periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -2880,7 +2880,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -2919,7 +2919,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: f.root.id,
           volunteerId: f.volunteer.id,
-          reimbursementTypeId: f.reimbursementType.id,
+          reimbursementTypeKey: f.reimbursementType.key,
           timeEntryIds: [f.timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -2977,7 +2977,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -3036,7 +3036,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -3070,7 +3070,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -3112,7 +3112,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),
@@ -3144,7 +3144,7 @@ describe('InvoiceService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           timeEntryIds: [timeEntry.id],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),

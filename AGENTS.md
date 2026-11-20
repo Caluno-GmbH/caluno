@@ -11,6 +11,7 @@ Mono-repo powered by TurboRepo.
 │   ├── backend             # Backend graphQL api service - NestJS, Postgres
 │   └── frontend            # Main web app - NextJS (includes the backoffice at /admin/[orgUId])
 └── packages                # Shared code imported by the apps and services
+    ├── bundle-email        # Shared bundle-email subject constants (@repo/bundle-email)
     ├── data                # Shared data library - graphQL queries and mutations
     ├── infra               # Terraform config for deploying the services and apps
     ├── lifespan            # Contract lifespan string parser (@repo/lifespan), shared by backend and frontend

@@ -197,7 +197,7 @@ export class BundleEmailService implements OnModuleInit {
       // sends of the same bundle at once would both pass it, so they queue
       // here and the second one sees the first one's delivery.
       await tx.execute(
-        sql`select pg_advisory_xact_lock(${ADVISORY_LOCK_KEYS.accountingBundleSend}, hashtext(${`${scope.volunteerId}:${scope.reimbursementTypeId}`}))`,
+        sql`select pg_advisory_xact_lock(${ADVISORY_LOCK_KEYS.accountingBundleSend}, hashtext(${`${scope.volunteerId}:${scope.reimbursementTypeKey}`}))`,
       );
       if (
         !issues.includes(BundleDeliveryIssue.ALREADY_SENT) &&
@@ -265,7 +265,7 @@ export class BundleEmailService implements OnModuleInit {
         this.reimbursementRateService.markInvoicesPaid(
           savepoint,
           delivery.volunteerId,
-          delivery.reimbursementTypeId,
+          delivery.reimbursementTypeKey,
           delivery.deliveredByUserId,
           delivery.invoiceIds,
         ),
@@ -296,7 +296,7 @@ export class BundleEmailService implements OnModuleInit {
       );
     }
 
-    const [settings, issues, volunteer, reimbursementType] = await Promise.all([
+    const [settings, issues, volunteer] = await Promise.all([
       this.deliverySettingsService.resolve(scope.organizationUnitId, locale),
       this.bundleDownloadService.findIssues(organizationId, scope, invoices, {
         checkAlreadySent: true,
@@ -305,9 +305,6 @@ export class BundleEmailService implements OnModuleInit {
         where: { id: scope.volunteerId },
         columns: { name: true },
       }),
-      this.reimbursementRateService.findReimbursementTypeById(
-        scope.reimbursementTypeId,
-      ),
     ]);
     if (!volunteer) throw new NotFoundGraphQLError('Volunteer not found');
 
@@ -316,7 +313,7 @@ export class BundleEmailService implements OnModuleInit {
       invoices.map((invoice) => invoice.periodStart),
       locale,
     );
-    const typeLabel = t(`accountingBundle.type${reimbursementType.key}`);
+    const typeLabel = t(`accountingBundle.type${scope.reimbursementTypeKey}`);
     const subject = renderBundleSubject(settings.emailSubject, {
       volunteer: volunteer.name,
       period: periodLabel,

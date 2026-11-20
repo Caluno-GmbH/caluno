@@ -13,6 +13,7 @@ WORKDIR /app
 COPY package.json bun.lock turbo.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY apps/frontend/package.json ./apps/frontend/
+COPY packages/bundle-email/package.json ./packages/bundle-email/
 COPY packages/data/package.json ./packages/data/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/observability/package.json ./packages/observability/
@@ -28,6 +29,7 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
 # Only the codegen inputs turbo.json declares are taken from apps/backend.
 COPY apps/backend/src/schema.gql ./apps/backend/src/schema.gql
 COPY apps/frontend ./apps/frontend
+COPY packages/bundle-email ./packages/bundle-email
 COPY packages/data ./packages/data
 COPY packages/ui ./packages/ui
 COPY packages/observability ./packages/observability
@@ -42,6 +44,7 @@ RUN bun run --cwd packages/data codegen
 RUN bun run --cwd packages/observability build
 RUN bun run --cwd packages/lifespan build
 RUN bun run --cwd packages/password-policy build
+RUN bun run --cwd packages/bundle-email build
 
 ENV NODE_ENV=production
 

@@ -17,8 +17,8 @@ export const timeEntryRelations = defineRelationsPart(schema, (r) => ({
       to: r.shiftInstances.id,
     }),
     reimbursementType: r.one.reimbursementTypes({
-      from: r.timeEntries.reimbursementTypeId,
-      to: r.reimbursementTypes.id,
+      from: r.timeEntries.reimbursementTypeKey,
+      to: r.reimbursementTypes.key,
     }),
     invoiceTimeEntry: r.one.invoiceTimeEntries({
       from: r.timeEntries.id,

@@ -4,20 +4,20 @@ import * as schema from '../../database/schema';
 export const accountingRelations = defineRelationsPart(schema, (r) => ({
   reimbursementTypes: {
     rates: r.many.reimbursementRates({
-      from: r.reimbursementTypes.id,
-      to: r.reimbursementRates.reimbursementTypeId,
+      from: r.reimbursementTypes.key,
+      to: r.reimbursementRates.reimbursementTypeKey,
     }),
     documentTemplates: r.many.documentTemplates({
-      from: r.reimbursementTypes.id,
-      to: r.documentTemplates.reimbursementTypeId,
+      from: r.reimbursementTypes.key,
+      to: r.documentTemplates.reimbursementTypeKey,
     }),
     contracts: r.many.contracts({
-      from: r.reimbursementTypes.id,
-      to: r.contracts.reimbursementTypeId,
+      from: r.reimbursementTypes.key,
+      to: r.contracts.reimbursementTypeKey,
     }),
     invoices: r.many.invoices({
-      from: r.reimbursementTypes.id,
-      to: r.invoices.reimbursementTypeId,
+      from: r.reimbursementTypes.key,
+      to: r.invoices.reimbursementTypeKey,
     }),
   },
   reimbursementRates: {
@@ -27,8 +27,8 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
       optional: false,
     }),
     reimbursementType: r.one.reimbursementTypes({
-      from: r.reimbursementRates.reimbursementTypeId,
-      to: r.reimbursementTypes.id,
+      from: r.reimbursementRates.reimbursementTypeKey,
+      to: r.reimbursementTypes.key,
       optional: false,
     }),
   },
@@ -43,8 +43,8 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
       to: r.organizationUnits.id,
     }),
     reimbursementType: r.one.reimbursementTypes({
-      from: r.documentTemplates.reimbursementTypeId,
-      to: r.reimbursementTypes.id,
+      from: r.documentTemplates.reimbursementTypeKey,
+      to: r.reimbursementTypes.key,
       optional: false,
     }),
     lastEditedByUser: r.one.users({
@@ -91,8 +91,8 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
       to: r.organizationUnits.id,
     }),
     reimbursementType: r.one.reimbursementTypes({
-      from: r.contracts.reimbursementTypeId,
-      to: r.reimbursementTypes.id,
+      from: r.contracts.reimbursementTypeKey,
+      to: r.reimbursementTypes.key,
       optional: false,
     }),
     declinedByUser: r.one.users({
@@ -124,8 +124,8 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
       to: r.organizationUnits.id,
     }),
     reimbursementType: r.one.reimbursementTypes({
-      from: r.invoices.reimbursementTypeId,
-      to: r.reimbursementTypes.id,
+      from: r.invoices.reimbursementTypeKey,
+      to: r.reimbursementTypes.key,
       optional: false,
     }),
     declinedByUser: r.one.users({
@@ -233,8 +233,8 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
       optional: false,
     }),
     reimbursementType: r.one.reimbursementTypes({
-      from: r.reimbursementBundleDeliveries.reimbursementTypeId,
-      to: r.reimbursementTypes.id,
+      from: r.reimbursementBundleDeliveries.reimbursementTypeKey,
+      to: r.reimbursementTypes.key,
       optional: false,
     }),
     deliveredByUser: r.one.users({
@@ -249,8 +249,8 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
       optional: false,
     }),
     reimbursementType: r.one.reimbursementTypes({
-      from: r.reimbursementBundleDownloads.reimbursementTypeId,
-      to: r.reimbursementTypes.id,
+      from: r.reimbursementBundleDownloads.reimbursementTypeKey,
+      to: r.reimbursementTypes.key,
       optional: false,
     }),
     downloadedByUser: r.one.users({
@@ -270,8 +270,8 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
       optional: false,
     }),
     reimbursementType: r.one.reimbursementTypes({
-      from: r.reimbursementManualBaselines.reimbursementTypeId,
-      to: r.reimbursementTypes.id,
+      from: r.reimbursementManualBaselines.reimbursementTypeKey,
+      to: r.reimbursementTypes.key,
       optional: false,
     }),
     updatedByUser: r.one.users({

@@ -55,14 +55,13 @@ type AccountingTemplateSlotStatus {
   hasContractTemplate: Boolean!
   hasInvoiceTemplate: Boolean!
   ready: Boolean!
-  reimbursementTypeId: ID!
   reimbursementTypeKey: ReimbursementTypeKey!
 }
 
 input AddTimeEntryInput {
   endedAt: DateTime
   notes: String
-  reimbursementTypeId: String
+  reimbursementTypeKey: ReimbursementTypeKey
   shiftInstanceId: String
   startedAt: DateTime!
   volunteerId: String!
@@ -87,6 +86,7 @@ type BundleDelivery {
   occurredAt: DateTime!
   recipientEmail: String
   reimbursementType: ReimbursementType
+  reimbursementTypeKey: ReimbursementTypeKey
   subject: String
   volunteer: User
 }
@@ -106,6 +106,7 @@ type BundleDownloadStatus {
   downloadedAt: DateTime!
   downloadedByUser: User
   reimbursementType: ReimbursementType!
+  reimbursementTypeKey: ReimbursementTypeKey!
   volunteer: User!
 }
 
@@ -128,18 +129,27 @@ type CheckInAgreement {
 type CheckInContext {
   eligibleOrganizationUnits: [OrganizationUnit!]!
   openTimeEntries: [TimeEntry!]!
-  volunteer: User!
+  pendingOrganizationUnits: [OrganizationUnit!]!
+  volunteer: User
+}
+
+type CheckInMembershipRequest {
+  canAccept: Boolean!
+  id: ID!
+  organizationUnitName: String
 }
 
 type CheckInReadiness {
   agreement: CheckInAgreement!
+  canViewVolunteerProfile: Boolean!
   hasOpenTimeEntry: Boolean!
   idVerificationEnabled: Boolean!
   idVerified: Boolean!
   isMember: Boolean!
   isParticipating: Boolean!
   membershipId: ID
-  openMembershipRequestId: ID
+  membershipRequest: CheckInMembershipRequest
+  shiftHasAvailableSeat: Boolean!
   shiftInviteStatus: ShiftInviteStatus
 }
 
@@ -164,6 +174,7 @@ type Contract {
   periodEnd: DateTime!
   periodStart: DateTime!
   reimbursementType: ReimbursementType!
+  reimbursementTypeKey: ReimbursementTypeKey!
   renewDate: DateTime
   resolvedBody: JSON!
   signatures: [ContractSignature!]!
@@ -175,7 +186,7 @@ type Contract {
 input ContractFilterInput {
   periodEnd: DateTime
   periodStart: DateTime
-  reimbursementTypeId: ID
+  reimbursementTypeKey: ReimbursementTypeKey
   status: ContractStatus
   volunteerId: ID
 }
@@ -213,7 +224,7 @@ input CreateContractInput {
   organizationUnitId: ID
   periodEnd: DateTime!
   periodStart: DateTime!
-  reimbursementTypeId: ID!
+  reimbursementTypeKey: ReimbursementTypeKey!
   sourceDraftId: ID
   volunteerId: ID!
 }
@@ -223,7 +234,7 @@ input CreateDocumentTemplateInput {
   invoiceNumberFormat: String
   kind: DocumentKind!
   organizationUnitId: ID
-  reimbursementTypeId: ID!
+  reimbursementTypeKey: ReimbursementTypeKey!
   renewalCadence: RenewalCadence
   signees: [CreateTemplateSigneeInput!]!
 }
@@ -272,7 +283,7 @@ input CreateInvoiceInput {
   organizationUnitId: ID
   periodEnd: DateTime!
   periodStart: DateTime!
-  reimbursementTypeId: ID!
+  reimbursementTypeKey: ReimbursementTypeKey!
   timeEntryIds: [ID!]!
   volunteerId: ID!
 }
@@ -332,7 +343,7 @@ input CreateShiftInput {
   location: String
   maxVolunteers: Int
   minVolunteers: Int
-  reimbursementTypeId: ID
+  reimbursementTypeKey: ReimbursementTypeKey
   requiredFormIds: [String!]
   rrule: String
   startsAt: DateTime!
@@ -383,6 +394,7 @@ type DocumentTemplate {
   organization: Organization!
   organizationUnit: OrganizationUnit
   reimbursementType: ReimbursementType!
+  reimbursementTypeKey: ReimbursementTypeKey!
   renewalCadence: RenewalCadence
   signees: [TemplateSignee!]!
   updatedAt: DateTime
@@ -397,7 +409,7 @@ input DuplicateShiftInput {
   location: String
   maxVolunteers: Int
   minVolunteers: Int
-  reimbursementTypeId: ID
+  reimbursementTypeKey: ReimbursementTypeKey
   requiredFormIds: [String!]
   rrule: String
   startsAt: DateTime!
@@ -646,6 +658,7 @@ type Invoice {
   periodEnd: DateTime!
   periodStart: DateTime!
   reimbursementType: ReimbursementType!
+  reimbursementTypeKey: ReimbursementTypeKey!
   resolvedBody: JSON!
   signatures: [InvoiceSignature!]!
   statusChanges: [InvoiceStatusChange!]!
@@ -664,7 +677,7 @@ type InvoiceEmailDelivery {
 input InvoiceFilterInput {
   periodEnd: DateTime
   periodStart: DateTime
-  reimbursementTypeId: ID
+  reimbursementTypeKey: ReimbursementTypeKey
   status: InvoiceStatus
   volunteerId: ID
 }
@@ -742,6 +755,7 @@ enum JoinStatus {
 type ManualBaseline {
   amountCents: Int!
   reimbursementType: ReimbursementType!
+  reimbursementTypeKey: ReimbursementTypeKey!
   updatedAt: DateTime!
   updatedByUser: User
   volunteer: User!
@@ -795,9 +809,9 @@ type Mutation {
   approveMembershipRequest(id: ID!, organizationUnitId: ID!): MembershipRequest!
   cancelMembershipRequest(id: ID!, organizationUnitId: ID!): MembershipRequest!
   checkIn(shiftInstanceId: ID!): TimeEntry!
+  checkInAddToShiftInstance(allowOverCapacity: Boolean! = false, checkInId: String!, shiftInstanceId: ID!): ShiftInstance!
   checkInApproveMembershipRequest(requestId: ID!): MembershipRequest!
-  checkInInviteToOrganization(volunteerId: ID!): Boolean!
-  checkInInviteToShiftInstance(shiftInstanceId: ID!, volunteerId: ID!): ShiftInstance!
+  checkInInviteToOrganization(checkInId: String!): Boolean!
   checkInVolunteer(shiftInstanceId: ID, startedAt: DateTime, volunteerId: ID!): TimeEntry!
   checkOut(shiftInstanceId: ID!): TimeEntry!
   checkOutVolunteer(timeEntryId: ID!): TimeEntry!
@@ -834,19 +848,19 @@ type Mutation {
   joinOrganization(organizationUnitId: ID!): JoinOrganizationResult!
   joinShiftInstance(instanceId: String!): JoinShiftInstanceResult!
   leaveMembership(id: ID!): Membership!
-  recordBundleDownload(invoiceIds: [ID!], reimbursementTypeId: ID!, volunteerId: ID!): BundleDownloadStatus!
+  recordBundleDownload(invoiceIds: [ID!], reimbursementTypeKey: ReimbursementTypeKey!, volunteerId: ID!): BundleDownloadStatus!
   regenerateFormShareToken(id: String!): RequirementForm!
   rejectMembershipRequest(id: ID!, organizationUnitId: ID!, rejectionReason: String!): MembershipRequest!
   remindShiftInstanceInvite(instanceId: String!, userId: String!): DateTime!
   removeMembership(id: ID!): Membership!
   removeMembershipRequest(id: ID!): MembershipRequest!
   requestOrganizationUnitDeletion(id: String!, message: String): OrganizationUnit!
-  sendReimbursementBundle(acknowledgedIssues: [BundleDeliveryIssue!]! = [], expectedRecipientEmail: String!, expectedSubject: String!, invoiceIds: [ID!], reimbursementTypeId: ID!, volunteerId: ID!): BundleDelivery!
+  sendReimbursementBundle(acknowledgedIssues: [BundleDeliveryIssue!]! = [], expectedRecipientEmail: String!, expectedSubject: String!, invoiceIds: [ID!], reimbursementTypeKey: ReimbursementTypeKey!, volunteerId: ID!): BundleDelivery!
   sendShiftInstanceCallOut(instanceId: String!): ShiftInstanceCallOutResult!
   setEventRequiredForms(eventId: ID!, formIds: [String!]!): [RequiredFormRef!]!
-  setManualBaseline(amountCents: Int!, reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): ManualBaseline!
+  setManualBaseline(amountCents: Int!, reimbursementTypeKey: ReimbursementTypeKey!, volunteerId: ID!, year: Int!): ManualBaseline!
   setMembershipIdVerified(membershipId: ID!, verified: Boolean!): Membership!
-  setReimbursementRate(hourlyRateCents: Int!, organizationUnitId: ID, reimbursementTypeId: ID!): ReimbursementRate!
+  setReimbursementRate(hourlyRateCents: Int!, organizationUnitId: ID, reimbursementTypeKey: ReimbursementTypeKey!): ReimbursementRate!
   setRequiredForms(formIds: [String!]!, organizationUnitId: String!): [RequiredFormRef!]!
   setShiftInstanceRequiredForms(formIds: [String!]!, instanceId: ID!): [RequiredFormRef!]!
   setShiftRequiredForms(formIds: [String!]!, shiftId: ID!): [RequiredFormRef!]!
@@ -991,6 +1005,7 @@ type PaidShiftSignupVolunteer {
   periodEnd: DateTime!
   periodStart: DateTime!
   reimbursementType: ReimbursementType!
+  reimbursementTypeKey: ReimbursementTypeKey!
   volunteer: User!
 }
 
@@ -1035,26 +1050,26 @@ enum PermissionKey {
 type Query {
   accountingDeliverySettings: AccountingDeliverySettings!
   accountingSetupStatus: AccountingSetupStatus!
-  activeDocumentTemplate(kind: DocumentKind!, organizationUnitId: ID, reimbursementTypeId: ID!): DocumentTemplate!
+  activeDocumentTemplate(kind: DocumentKind!, organizationUnitId: ID, reimbursementTypeKey: ReimbursementTypeKey!): DocumentTemplate!
   activeShiftInstances: [ShiftInstance!]!
   adminVolunteerSubmission(id: String!): FormSubmission
   availableEvents(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, organizationUnitIds: [ID!], startsAfter: DateTime = null): EventPaginatedResponse!
   availableShiftInstanceDayCounts(endsBefore: DateTime = null, excludeIntended: Boolean! = false, organizationUnitIds: [ID!], startsAfter: DateTime = null): [ShiftInstanceDayCount!]!
   availableShiftInstances(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, organizationUnitIds: [ID!], startsAfter: DateTime = null): ShiftInstancePaginatedResponse!
   bundleDeliveries(limit: Int = 50, offset: Int = 0): [BundleDelivery!]!
-  bundleDownloadStatus(reimbursementTypeId: ID!, volunteerId: ID!): BundleDownloadStatus
-  bundleSendPreview(invoiceIds: [ID!], reimbursementTypeId: ID!, volunteerId: ID!): BundleSendPreview!
+  bundleDownloadStatus(reimbursementTypeKey: ReimbursementTypeKey!, volunteerId: ID!): BundleDownloadStatus
+  bundleSendPreview(invoiceIds: [ID!], reimbursementTypeKey: ReimbursementTypeKey!, volunteerId: ID!): BundleSendPreview!
   checkInContext(checkInId: String!): CheckInContext
-  checkInReadiness(shiftInstanceId: ID, volunteerId: ID!): CheckInReadiness!
+  checkInReadiness(checkInId: String!, shiftInstanceId: ID): CheckInReadiness!
   checkInShiftInstances(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, startsAfter: DateTime = null): [ShiftInstance!]!
   checkInShifts(search: String): [Shift!]!
-  checkInVolunteerRequiredForms(volunteerId: ID!): [RequiredFormWithStatus!]!
+  checkInVolunteerRequiredForms(checkInId: String!): [RequiredFormWithStatus!]!
   contract(id: ID!): Contract!
   contracts(filter: ContractFilterInput): [Contract!]!
   documentTemplate(id: ID!): DocumentTemplate!
   documentTemplates: [DocumentTemplate!]!
   effectiveRates(organizationUnitId: ID): [EffectiveRate!]!
-  eligibleTimeEntriesForInvoice(periodEnd: DateTime, periodStart: DateTime, reimbursementTypeId: ID!, volunteerId: ID!): [TimeEntry!]!
+  eligibleTimeEntriesForInvoice(periodEnd: DateTime, periodStart: DateTime, reimbursementTypeKey: ReimbursementTypeKey!, volunteerId: ID!): [TimeEntry!]!
   event(id: ID!): Event!
   eventInvites(eventId: ID!): [EventInvite!]!
   eventShiftInstanceStarts(eventId: ID!): [DateTime!]!
@@ -1071,7 +1086,7 @@ type Query {
   invoice(id: ID!): Invoice!
   invoices(filter: InvoiceFilterInput): [Invoice!]!
   isMemberOfUnitOrAncestor(organizationUnitId: ID!, userId: String!): Boolean!
-  manualBaseline(reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): ManualBaseline
+  manualBaseline(reimbursementTypeKey: ReimbursementTypeKey!, volunteerId: ID!, year: Int!): ManualBaseline
   me: UserWithPaymentProfile!
   members(organizationUnitId: ID!): [User!]!
   membership(organizationUnitId: ID!): Membership
@@ -1137,7 +1152,7 @@ type Query {
   shifts(dateFrom: DateTime, dateTo: DateTime, fill: ShiftFillFilter, limit: Int! = 10, location: String, offset: Int! = 0, order: SortOrder! = DESC, search: String, sort: ShiftSortField! = CREATED_AT, visibility: ShiftVisibility): ShiftPaginatedResponse!
   termsStatus: TermsStatus!
   timeEntries(dateFrom: DateTime, dateTo: DateTime, limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, shiftId: ID, sort: TimeEntrySortField! = CREATED_AT, statuses: [TimeEntryStatus!], volunteerId: ID): TimeEntryPaginatedResponse!
-  timeEntriesAwaitingReviewForInvoice(periodEnd: DateTime, periodStart: DateTime, reimbursementTypeId: ID!, volunteerId: ID!): [TimeEntry!]!
+  timeEntriesAwaitingReviewForInvoice(periodEnd: DateTime, periodStart: DateTime, reimbursementTypeKey: ReimbursementTypeKey!, volunteerId: ID!): [TimeEntry!]!
   timeEntriesByUser(limit: Int! = 10, offset: Int! = 0, userId: String!): TimeEntryPaginatedResponse!
   timeEntry(id: String!): TimeEntry!
   todoFillAssignmentFilter: TodoFillAssignmentFilter!
@@ -1145,7 +1160,7 @@ type Query {
   volunteerAllowanceStates(shiftInstanceId: ID, volunteerIds: [ID!]!): [VolunteerAllowance!]!
   volunteersNeedingTimesheets(periodEnd: DateTime, periodStart: DateTime): [VolunteerNeedsTimesheet!]!
   weeklyShifts(endsBefore: DateTime = null, eventId: ID, limit: Int! = 15, offset: Int! = 0, startsAfter: DateTime = null): [ShiftInstance!]!
-  yearlyUsage(asOfDate: DateTime, excludeInvoiceId: ID, reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): YearlyUsage!
+  yearlyUsage(asOfDate: DateTime, excludeInvoiceId: ID, reimbursementTypeKey: ReimbursementTypeKey!, volunteerId: ID!, year: Int!): YearlyUsage!
 }
 
 type RateProvenance {
@@ -1171,7 +1186,6 @@ type ReimbursementRate {
 
 type ReimbursementType {
   createdAt: DateTime!
-  id: ID!
   key: ReimbursementTypeKey!
   legalReference: String!
   platformDefaultRateCents: Int!
@@ -1187,6 +1201,7 @@ enum ReimbursementTypeKey {
 type ReimbursementTypeUsage {
   limitCents: Int!
   reimbursementType: ReimbursementType!
+  reimbursementTypeKey: ReimbursementTypeKey!
   remainingCents: Int!
   usedCents: Int!
 }
@@ -1286,7 +1301,6 @@ type Shift {
   organizationUnit: OrganizationUnit!
   organizationUnitId: ID!
   originalStartsAt: DateTime!
-  reimbursementTypeId: ID
   reimbursementTypeKey: ReimbursementTypeKey
   requiredForms: [RequiredFormRef!]!
   requiredFormsCount: Int!
@@ -1329,7 +1343,7 @@ type ShiftInstance {
   overrideLocation: String
   overrideMaxVolunteers: Int
   overrideMinVolunteers: Int
-  overrideReimbursementTypeId: ID
+  overrideReimbursementTypeKey: ReimbursementTypeKey
   overrideTitle: String
   pendingCount: Int!
   reimbursementTypeKey: ReimbursementTypeKey
@@ -1473,6 +1487,7 @@ type TimeEntry {
   notes: String
   organizationUnit: OrganizationUnit!
   reimbursementType: ReimbursementType
+  reimbursementTypeKey: ReimbursementTypeKey
   shiftInstance: ShiftInstance
   startedAt: DateTime!
   status: TimeEntryStatus!
@@ -1636,7 +1651,7 @@ input UpdateShiftInput {
   location: String
   maxVolunteers: Int
   minVolunteers: Int
-  reimbursementTypeId: ID
+  reimbursementTypeKey: ReimbursementTypeKey
   requiredFormIds: [String!]
   rrule: String
   startsAt: DateTime
@@ -1651,7 +1666,7 @@ input UpdateShiftInstanceInput {
   location: String
   maxVolunteers: Int
   minVolunteers: Int
-  reimbursementTypeId: ID
+  reimbursementTypeKey: ReimbursementTypeKey
   requiredFormIds: [String!]
   rrule: String
   startsAt: DateTime!
@@ -1662,7 +1677,7 @@ input UpdateShiftInstanceInput {
 input UpdateTimeEntryInput {
   endedAt: DateTime
   notes: String
-  reimbursementTypeId: String
+  reimbursementTypeKey: ReimbursementTypeKey
   shiftInstanceId: String
   startedAt: DateTime!
 }
@@ -1780,6 +1795,7 @@ type VolunteerNeedsTimesheet {
   periodEnd: DateTime!
   periodStart: DateTime!
   reimbursementType: ReimbursementType!
+  reimbursementTypeKey: ReimbursementTypeKey!
   volunteer: User!
 }
 

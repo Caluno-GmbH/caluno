@@ -14,10 +14,7 @@ import type { AuthService } from '../src/auth/auth.service';
 import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
 import * as schema from '../src/database/schema';
-import {
-  BadRequestGraphQLError,
-  NotFoundGraphQLError,
-} from '../src/graphql/errors';
+import { BadRequestGraphQLError } from '../src/graphql/errors';
 import { MembershipService } from '../src/membership/membership.service';
 import type { NotificationService } from '../src/notification';
 import { OrganizationUnitDataModule } from '../src/organization/organization-unit-data.module';
@@ -96,7 +93,7 @@ describe('ReimbursementRateService', () => {
 
       const rates = await service.getEffectiveRates(organization.id, root.id);
       const rate = rates.find(
-        (r) => r.reimbursementType.id === reimbursementType.id,
+        (r) => r.reimbursementType.key === reimbursementType.key,
       );
 
       expect(rate).toMatchObject({
@@ -114,14 +111,14 @@ describe('ReimbursementRateService', () => {
 
       await service.setReimbursementRate(
         organization.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2_000,
         ACTOR_USER_ID,
       );
 
       const rates = await service.getEffectiveRates(organization.id, root.id);
       const rate = rates.find(
-        (r) => r.reimbursementType.id === reimbursementType.id,
+        (r) => r.reimbursementType.key === reimbursementType.key,
       );
 
       expect(rate).toMatchObject({ hourlyRateCents: 2_000, isOverride: true });
@@ -135,20 +132,20 @@ describe('ReimbursementRateService', () => {
 
       const [platformDefault] = (
         await service.getEffectiveRates(organization.id, root.id)
-      ).filter((r) => r.reimbursementType.id === reimbursementType.id);
+      ).filter((r) => r.reimbursementType.key === reimbursementType.key);
       expect(platformDefault?.isOverride).toBe(false);
       expect(platformDefault?.organizationUnitId).toBeNull();
 
       await service.setReimbursementRate(
         organization.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2_000,
         ACTOR_USER_ID,
         root.id,
       );
       const [override] = (
         await service.getEffectiveRates(organization.id, root.id)
-      ).filter((r) => r.reimbursementType.id === reimbursementType.id);
+      ).filter((r) => r.reimbursementType.key === reimbursementType.key);
       expect(override?.isOverride).toBe(true);
       expect(override?.organizationUnitId).toBe(root.id);
     });
@@ -164,7 +161,7 @@ describe('ReimbursementRateService', () => {
       const cents = await service.getEffectiveRateCents(
         organization.id,
         root.id,
-        type.id,
+        type.key,
       );
       expect(cents).toBe(1_500);
     });
@@ -182,16 +179,20 @@ describe('ReimbursementRateService', () => {
       });
       await service.setReimbursementRate(
         organization.id,
-        type.id,
+        type.key,
         2_000,
         ACTOR_USER_ID,
       );
 
       expect(
-        await service.getEffectiveRateCents(organization.id, root.id, type.id),
+        await service.getEffectiveRateCents(organization.id, root.id, type.key),
       ).toBe(2_000);
       expect(
-        await service.getEffectiveRateCents(organization.id, child.id, type.id),
+        await service.getEffectiveRateCents(
+          organization.id,
+          child.id,
+          type.key,
+        ),
       ).toBe(2_000);
     });
 
@@ -214,13 +215,13 @@ describe('ReimbursementRateService', () => {
       });
       await service.setReimbursementRate(
         organization.id,
-        type.id,
+        type.key,
         2_000,
         ACTOR_USER_ID,
       ); // org-wide
       await service.setReimbursementRate(
         organization.id,
-        type.id,
+        type.key,
         3_000,
         ACTOR_USER_ID,
         child.id,
@@ -230,11 +231,11 @@ describe('ReimbursementRateService', () => {
         await service.getEffectiveRateCents(
           organization.id,
           grandchild.id,
-          type.id,
+          type.key,
         ),
       ).toBe(3_000); // inherits from child, not org-wide or platform default
       expect(
-        await service.getEffectiveRateCents(organization.id, root.id, type.id),
+        await service.getEffectiveRateCents(organization.id, root.id, type.key),
       ).toBe(2_000); // root has no override of its own or from an ancestor, falls to org-wide
     });
 
@@ -250,14 +251,14 @@ describe('ReimbursementRateService', () => {
       });
       await service.setReimbursementRate(
         organization.id,
-        ehrenamt.id,
+        ehrenamt.key,
         1_800,
         ACTOR_USER_ID,
         root.id,
       );
       await service.setReimbursementRate(
         organization.id,
-        uebungsleiter.id,
+        uebungsleiter.key,
         2_800,
         ACTOR_USER_ID,
         root.id,
@@ -267,14 +268,14 @@ describe('ReimbursementRateService', () => {
         await service.getEffectiveRateCents(
           organization.id,
           root.id,
-          ehrenamt.id,
+          ehrenamt.key,
         ),
       ).toBe(1_800);
       expect(
         await service.getEffectiveRateCents(
           organization.id,
           root.id,
-          uebungsleiter.id,
+          uebungsleiter.key,
         ),
       ).toBe(2_800);
     });
@@ -302,14 +303,14 @@ describe('ReimbursementRateService', () => {
       const setRate = (cents: number, unitId?: string) =>
         service.setReimbursementRate(
           organization.id,
-          type.id,
+          type.key,
           cents,
           ACTOR_USER_ID,
           unitId,
         );
       const rateAt = async (unitId: string) =>
         (await service.getEffectiveRates(organization.id, unitId)).find(
-          (rate) => rate.reimbursementType.id === type.id,
+          (rate) => rate.reimbursementType.key === type.key,
         );
       return { organization, root, child, grandchild, setRate, rateAt };
     };
@@ -418,27 +419,11 @@ describe('ReimbursementRateService', () => {
       await expect(
         service.setReimbursementRate(
           organization.id,
-          reimbursementType.id,
+          reimbursementType.key,
           0,
           ACTOR_USER_ID,
         ),
       ).rejects.toBeInstanceOf(BadRequestGraphQLError);
-    });
-
-    it('throws NotFoundGraphQLError for an unknown reimbursement type', async () => {
-      const { organization } = await createOrganizationWithType(
-        db,
-        `Unknown Type Org ${crypto.randomUUID()}`,
-      );
-
-      await expect(
-        service.setReimbursementRate(
-          organization.id,
-          crypto.randomUUID(),
-          1_000,
-          ACTOR_USER_ID,
-        ),
-      ).rejects.toBeInstanceOf(NotFoundGraphQLError);
     });
 
     it('upserts rather than duplicating a rate row for the same org and type', async () => {
@@ -450,13 +435,13 @@ describe('ReimbursementRateService', () => {
 
       await service.setReimbursementRate(
         organization.id,
-        reimbursementType.id,
+        reimbursementType.key,
         1_800,
         ACTOR_USER_ID,
       );
       await service.setReimbursementRate(
         organization.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2_200,
         ACTOR_USER_ID,
       );
@@ -468,8 +453,8 @@ describe('ReimbursementRateService', () => {
           and(
             eq(schema.reimbursementRates.organizationId, organization.id),
             eq(
-              schema.reimbursementRates.reimbursementTypeId,
-              reimbursementType.id,
+              schema.reimbursementRates.reimbursementTypeKey,
+              reimbursementType.key,
             ),
           ),
         );
@@ -484,14 +469,14 @@ describe('ReimbursementRateService', () => {
 
       await service.setReimbursementRate(
         organization.id,
-        reimbursementType.id,
+        reimbursementType.key,
         1_800,
         ACTOR_USER_ID,
         root.id,
       );
       await service.setReimbursementRate(
         organization.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2_200,
         ACTOR_USER_ID,
         root.id,
@@ -504,8 +489,8 @@ describe('ReimbursementRateService', () => {
           and(
             eq(schema.reimbursementRates.organizationUnitId, root.id),
             eq(
-              schema.reimbursementRates.reimbursementTypeId,
-              reimbursementType.id,
+              schema.reimbursementRates.reimbursementTypeKey,
+              reimbursementType.key,
             ),
           ),
         );
@@ -520,13 +505,13 @@ describe('ReimbursementRateService', () => {
 
       await service.setReimbursementRate(
         organization.id,
-        reimbursementType.id,
+        reimbursementType.key,
         1_800,
         ACTOR_USER_ID,
       );
       await service.setReimbursementRate(
         organization.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2_200,
         ACTOR_USER_ID,
         root.id,
@@ -539,8 +524,8 @@ describe('ReimbursementRateService', () => {
           and(
             eq(schema.reimbursementRates.organizationId, organization.id),
             eq(
-              schema.reimbursementRates.reimbursementTypeId,
-              reimbursementType.id,
+              schema.reimbursementRates.reimbursementTypeKey,
+              reimbursementType.key,
             ),
           ),
         );
@@ -558,7 +543,7 @@ describe('ReimbursementRateService', () => {
       const volunteer = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
@@ -571,7 +556,7 @@ describe('ReimbursementRateService', () => {
         db.insert(schema.invoices).values({
           documentTemplateId: template.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           organizationUnitId: root.id,
           periodStart: overrides.periodStart,
           periodEnd: overrides.periodStart,
@@ -602,7 +587,7 @@ describe('ReimbursementRateService', () => {
       const usage = await service.getYearlyUsage(
         organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
       );
 
@@ -622,14 +607,14 @@ describe('ReimbursementRateService', () => {
       const editor = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       await db.insert(schema.invoices).values({
         documentTemplateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: root.id,
         periodStart: new Date('2026-03-01T00:00:00.000Z'),
         periodEnd: new Date('2026-03-01T00:00:00.000Z'),
@@ -643,7 +628,7 @@ describe('ReimbursementRateService', () => {
       await service.setManualBaseline(
         organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
         5_000,
         editor.id,
@@ -652,7 +637,7 @@ describe('ReimbursementRateService', () => {
       const usage = await service.getYearlyUsage(
         organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
       );
 
@@ -671,7 +656,7 @@ describe('ReimbursementRateService', () => {
       const volunteer = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
@@ -684,7 +669,7 @@ describe('ReimbursementRateService', () => {
         db.insert(schema.invoices).values({
           documentTemplateId: template.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           organizationUnitId: root.id,
           periodStart: overrides.periodStart,
           periodEnd: overrides.periodEnd,
@@ -718,7 +703,7 @@ describe('ReimbursementRateService', () => {
       const usage = await service.getYearlyUsage(
         organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
         new Date('2026-07-31T23:59:59.000Z'),
       );
@@ -739,7 +724,7 @@ describe('ReimbursementRateService', () => {
         const volunteer = await createUser(db);
         const template = await createDocumentTemplate(db, {
           organizationId: organization.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           kind: DocumentKind.INVOICE,
           signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
         });
@@ -752,7 +737,7 @@ describe('ReimbursementRateService', () => {
             .values({
               documentTemplateId: template.id,
               volunteerId: volunteer.id,
-              reimbursementTypeId: reimbursementType.id,
+              reimbursementTypeKey: reimbursementType.key,
               organizationUnitId: root.id,
               periodStart,
               periodEnd: periodStart,
@@ -781,7 +766,7 @@ describe('ReimbursementRateService', () => {
         const usage = await service.getYearlyUsage(
           organization.id,
           volunteer.id,
-          reimbursementType.id,
+          reimbursementType.key,
           2026,
           undefined,
           current.id,
@@ -801,7 +786,7 @@ describe('ReimbursementRateService', () => {
         const usage = await service.getYearlyUsage(
           organization.id,
           volunteer.id,
-          reimbursementType.id,
+          reimbursementType.key,
           2026,
           undefined,
           `${volunteer.id}-manual-invoice-ehrenamt`,
@@ -817,7 +802,7 @@ describe('ReimbursementRateService', () => {
         await service.setManualBaseline(
           organization.id,
           volunteer.id,
-          reimbursementType.id,
+          reimbursementType.key,
           2026,
           5_000,
           editor.id,
@@ -826,7 +811,7 @@ describe('ReimbursementRateService', () => {
         const usage = await service.getYearlyUsage(
           organization.id,
           volunteer.id,
-          reimbursementType.id,
+          reimbursementType.key,
           2026,
           undefined,
           current.id,
@@ -845,20 +830,20 @@ describe('ReimbursementRateService', () => {
       const volunteer = await createUser(db);
       const templateA = await createDocumentTemplate(db, {
         organizationId: orgA.organization.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       const templateB = await createDocumentTemplate(db, {
         organizationId: orgB.organization.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       await db.insert(schema.invoices).values({
         documentTemplateId: templateA.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: orgA.root.id,
         periodStart: new Date('2026-03-01T00:00:00.000Z'),
         periodEnd: new Date('2026-03-01T00:00:00.000Z'),
@@ -872,7 +857,7 @@ describe('ReimbursementRateService', () => {
       await db.insert(schema.invoices).values({
         documentTemplateId: templateB.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: orgB.root.id,
         periodStart: new Date('2026-04-01T00:00:00.000Z'),
         periodEnd: new Date('2026-04-01T00:00:00.000Z'),
@@ -887,7 +872,7 @@ describe('ReimbursementRateService', () => {
       const usageB = await service.getYearlyUsage(
         orgB.organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
       );
 
@@ -908,14 +893,14 @@ describe('ReimbursementRateService', () => {
       const volunteer = await createUser(db);
       const templateRoot = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         organizationUnitId: root.id,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       const templateSibling = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         organizationUnitId: sibling.id,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -923,7 +908,7 @@ describe('ReimbursementRateService', () => {
       await db.insert(schema.invoices).values({
         documentTemplateId: templateRoot.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: root.id,
         periodStart: new Date('2026-03-01T00:00:00.000Z'),
         periodEnd: new Date('2026-03-01T00:00:00.000Z'),
@@ -937,7 +922,7 @@ describe('ReimbursementRateService', () => {
       await db.insert(schema.invoices).values({
         documentTemplateId: templateSibling.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: sibling.id,
         periodStart: new Date('2026-05-01T00:00:00.000Z'),
         periodEnd: new Date('2026-05-01T00:00:00.000Z'),
@@ -952,7 +937,7 @@ describe('ReimbursementRateService', () => {
       const usage = await service.getYearlyUsage(
         organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
       );
 
@@ -970,7 +955,7 @@ describe('ReimbursementRateService', () => {
       await service.setManualBaseline(
         orgA.organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
         12_000,
         editor.id,
@@ -978,7 +963,7 @@ describe('ReimbursementRateService', () => {
       await service.setManualBaseline(
         orgB.organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
         3_000,
         editor.id,
@@ -987,7 +972,7 @@ describe('ReimbursementRateService', () => {
       const usageB = await service.getYearlyUsage(
         orgB.organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
       );
 
@@ -995,7 +980,7 @@ describe('ReimbursementRateService', () => {
       const baselineA = await service.getManualBaseline(
         orgA.organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
       );
       expect(baselineA?.amountCents).toBe(12_000);
@@ -1010,7 +995,7 @@ describe('ReimbursementRateService', () => {
       });
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: type.id,
+        reimbursementTypeKey: type.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
@@ -1019,7 +1004,7 @@ describe('ReimbursementRateService', () => {
       await db.insert(schema.invoices).values({
         documentTemplateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: type.id,
+        reimbursementTypeKey: type.key,
         organizationUnitId: unit.id,
         periodStart: new Date('2026-03-01T00:00:00.000Z'),
         periodEnd: new Date('2026-03-01T00:00:00.000Z'),
@@ -1036,7 +1021,7 @@ describe('ReimbursementRateService', () => {
       expect(usage).toHaveLength(1);
       expect(usage[0]?.volunteer.id).toBe(volunteer.id);
       const typeUsage = usage[0]?.usageByType.find(
-        (u) => u.reimbursementType.id === type.id,
+        (u) => u.reimbursementType.key === type.key,
       );
       expect(typeUsage?.usedCents).toBe(5_000);
       expect(typeUsage?.limitCents).toBe(84_000);
@@ -1065,13 +1050,13 @@ describe('ReimbursementRateService', () => {
       });
       const templateEhrenamt = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: ehrenamt.id,
+        reimbursementTypeKey: ehrenamt.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       const templateUebungsleiter = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: uebungsleiter.id,
+        reimbursementTypeKey: uebungsleiter.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
@@ -1086,7 +1071,7 @@ describe('ReimbursementRateService', () => {
       const insertInvoice = (overrides: {
         documentTemplateId: string;
         volunteerId: string;
-        reimbursementTypeId: string;
+        reimbursementTypeKey: ReimbursementTypeKey;
         totalAmountCents: number;
         invoiceStatus: InvoiceStatus;
         periodStart: Date;
@@ -1094,7 +1079,7 @@ describe('ReimbursementRateService', () => {
         db.insert(schema.invoices).values({
           documentTemplateId: overrides.documentTemplateId,
           volunteerId: overrides.volunteerId,
-          reimbursementTypeId: overrides.reimbursementTypeId,
+          reimbursementTypeKey: overrides.reimbursementTypeKey,
           organizationUnitId: unit.id,
           periodStart: overrides.periodStart,
           periodEnd: overrides.periodStart,
@@ -1110,7 +1095,7 @@ describe('ReimbursementRateService', () => {
       await insertInvoice({
         documentTemplateId: templateEhrenamt.id,
         volunteerId: volunteerA.id,
-        reimbursementTypeId: ehrenamt.id,
+        reimbursementTypeKey: ehrenamt.key,
         totalAmountCents: 5_000,
         invoiceStatus: InvoiceStatus.READY,
         periodStart: new Date('2026-02-01T00:00:00.000Z'),
@@ -1118,7 +1103,7 @@ describe('ReimbursementRateService', () => {
       await insertInvoice({
         documentTemplateId: templateEhrenamt.id,
         volunteerId: volunteerA.id,
-        reimbursementTypeId: ehrenamt.id,
+        reimbursementTypeKey: ehrenamt.key,
         totalAmountCents: 2_000,
         invoiceStatus: InvoiceStatus.DECLINED,
         periodStart: new Date('2026-04-01T00:00:00.000Z'),
@@ -1127,7 +1112,7 @@ describe('ReimbursementRateService', () => {
       await insertInvoice({
         documentTemplateId: templateUebungsleiter.id,
         volunteerId: volunteerA.id,
-        reimbursementTypeId: uebungsleiter.id,
+        reimbursementTypeKey: uebungsleiter.key,
         totalAmountCents: 10_000,
         invoiceStatus: InvoiceStatus.READY,
         periodStart: new Date('2026-06-01T00:00:00.000Z'),
@@ -1135,7 +1120,7 @@ describe('ReimbursementRateService', () => {
       await insertInvoice({
         documentTemplateId: templateUebungsleiter.id,
         volunteerId: volunteerA.id,
-        reimbursementTypeId: uebungsleiter.id,
+        reimbursementTypeKey: uebungsleiter.key,
         totalAmountCents: 50_000,
         invoiceStatus: InvoiceStatus.READY,
         periodStart: new Date('2025-06-01T00:00:00.000Z'),
@@ -1145,7 +1130,7 @@ describe('ReimbursementRateService', () => {
       await insertInvoice({
         documentTemplateId: templateEhrenamt.id,
         volunteerId: outsideVolunteer.id,
-        reimbursementTypeId: ehrenamt.id,
+        reimbursementTypeKey: ehrenamt.key,
         totalAmountCents: 9_999,
         invoiceStatus: InvoiceStatus.READY,
         periodStart: new Date('2026-02-01T00:00:00.000Z'),
@@ -1160,10 +1145,10 @@ describe('ReimbursementRateService', () => {
 
       const entryA = byVolunteerId.get(volunteerA.id);
       const aEhrenamt = entryA?.usageByType.find(
-        (u) => u.reimbursementType.id === ehrenamt.id,
+        (u) => u.reimbursementType.key === ehrenamt.key,
       );
       const aUebungsleiter = entryA?.usageByType.find(
-        (u) => u.reimbursementType.id === uebungsleiter.id,
+        (u) => u.reimbursementType.key === uebungsleiter.key,
       );
       expect(aEhrenamt?.usedCents).toBe(5_000);
       expect(aEhrenamt?.remainingCents).toBe(79_000);
@@ -1172,7 +1157,7 @@ describe('ReimbursementRateService', () => {
 
       const entryB = byVolunteerId.get(volunteerB.id);
       const bEhrenamt = entryB?.usageByType.find(
-        (u) => u.reimbursementType.id === ehrenamt.id,
+        (u) => u.reimbursementType.key === ehrenamt.key,
       );
       expect(bEhrenamt?.usedCents).toBe(0);
       expect(bEhrenamt?.remainingCents).toBe(84_000);
@@ -1191,7 +1176,7 @@ describe('ReimbursementRateService', () => {
       await service.setManualBaseline(
         organization.id,
         volunteer.id,
-        type.id,
+        type.key,
         2026,
         7_500,
         editor.id,
@@ -1201,7 +1186,7 @@ describe('ReimbursementRateService', () => {
 
       const entry = usage.find((u) => u.volunteer.id === volunteer.id);
       const typeUsage = entry?.usageByType.find(
-        (tu) => tu.reimbursementType.id === type.id,
+        (tu) => tu.reimbursementType.key === type.key,
       );
       expect(typeUsage?.usedCents).toBe(7_500);
       expect(typeUsage?.remainingCents).toBe(76_500);
@@ -1218,20 +1203,20 @@ describe('ReimbursementRateService', () => {
       await addMembership(db, volunteer.id, orgB.root.id);
       const templateA = await createDocumentTemplate(db, {
         organizationId: orgA.organization.id,
-        reimbursementTypeId: type.id,
+        reimbursementTypeKey: type.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       const templateB = await createDocumentTemplate(db, {
         organizationId: orgB.organization.id,
-        reimbursementTypeId: type.id,
+        reimbursementTypeKey: type.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       await db.insert(schema.invoices).values({
         documentTemplateId: templateA.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: type.id,
+        reimbursementTypeKey: type.key,
         organizationUnitId: orgA.root.id,
         periodStart: new Date('2026-03-01T00:00:00.000Z'),
         periodEnd: new Date('2026-03-01T00:00:00.000Z'),
@@ -1245,7 +1230,7 @@ describe('ReimbursementRateService', () => {
       await db.insert(schema.invoices).values({
         documentTemplateId: templateB.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: type.id,
+        reimbursementTypeKey: type.key,
         organizationUnitId: orgB.root.id,
         periodStart: new Date('2026-04-01T00:00:00.000Z'),
         periodEnd: new Date('2026-04-01T00:00:00.000Z'),
@@ -1259,7 +1244,7 @@ describe('ReimbursementRateService', () => {
       await service.setManualBaseline(
         orgA.organization.id,
         volunteer.id,
-        type.id,
+        type.key,
         2026,
         8_000,
         editor.id,
@@ -1268,7 +1253,7 @@ describe('ReimbursementRateService', () => {
       const usage = await service.getRosterYearlyUsage(orgB.root.id, 2026);
       const entry = usage.find((u) => u.volunteer.id === volunteer.id);
       const typeUsage = entry?.usageByType.find(
-        (tu) => tu.reimbursementType.id === type.id,
+        (tu) => tu.reimbursementType.key === type.key,
       );
       expect(typeUsage?.usedCents).toBe(5_000);
     });
@@ -1283,7 +1268,7 @@ describe('ReimbursementRateService', () => {
       const result = await service.getManualBaseline(
         organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
       );
 
@@ -1299,7 +1284,7 @@ describe('ReimbursementRateService', () => {
       const result = await service.setManualBaseline(
         organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
         15_000,
         editor.id,
@@ -1312,7 +1297,7 @@ describe('ReimbursementRateService', () => {
       const fetched = await service.getManualBaseline(
         organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
       );
       expect(fetched?.amountCents).toBe(15_000);
@@ -1328,7 +1313,7 @@ describe('ReimbursementRateService', () => {
       await service.setManualBaseline(
         organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
         15_000,
         firstEditor.id,
@@ -1336,7 +1321,7 @@ describe('ReimbursementRateService', () => {
       const updated = await service.setManualBaseline(
         organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
         20_000,
         secondEditor.id,
@@ -1348,7 +1333,7 @@ describe('ReimbursementRateService', () => {
       const rows = await db.query.reimbursementManualBaselines.findMany({
         where: {
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           year: 2026,
         },
       });
@@ -1365,7 +1350,7 @@ describe('ReimbursementRateService', () => {
         service.setManualBaseline(
           organization.id,
           volunteer.id,
-          reimbursementType.id,
+          reimbursementType.key,
           2026,
           -1,
           editor.id,
@@ -1382,7 +1367,7 @@ describe('ReimbursementRateService', () => {
       await service.setManualBaseline(
         organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2025,
         5_000,
         editor.id,
@@ -1390,7 +1375,7 @@ describe('ReimbursementRateService', () => {
       await service.setManualBaseline(
         organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
         15_000,
         editor.id,
@@ -1399,13 +1384,13 @@ describe('ReimbursementRateService', () => {
       const y2025 = await service.getManualBaseline(
         organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2025,
       );
       const y2026 = await service.getManualBaseline(
         organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
       );
       expect(y2025?.amountCents).toBe(5_000);
@@ -1422,7 +1407,7 @@ describe('ReimbursementRateService', () => {
       await service.setManualBaseline(
         orgA.organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
         5_000,
         editor.id,
@@ -1430,7 +1415,7 @@ describe('ReimbursementRateService', () => {
       await service.setManualBaseline(
         orgB.organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
         9_000,
         editor.id,
@@ -1439,13 +1424,13 @@ describe('ReimbursementRateService', () => {
       const a = await service.getManualBaseline(
         orgA.organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
       );
       const b = await service.getManualBaseline(
         orgB.organization.id,
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
       );
       expect(a?.amountCents).toBe(5_000);
@@ -1458,7 +1443,7 @@ describe('ReimbursementRateService', () => {
       const type = await createReimbursementType(db);
       const status = await service.getBundleDownloadStatus(
         'nonexistent-user',
-        type.id,
+        type.key,
       );
       expect(status).toBeUndefined();
     });
@@ -1470,12 +1455,12 @@ describe('ReimbursementRateService', () => {
 
       const result = await service.recordBundleDownload(
         volunteer.id,
-        type.id,
+        type.key,
         downloader.id,
       );
 
       expect(result.volunteerId).toBe(volunteer.id);
-      expect(result.reimbursementTypeId).toBe(type.id);
+      expect(result.reimbursementTypeKey).toBe(type.key);
       expect(result.downloadedByUserId).toBe(downloader.id);
       expect(result.downloadedAt).toBeInstanceOf(Date);
     });
@@ -1488,19 +1473,19 @@ describe('ReimbursementRateService', () => {
 
       await service.recordBundleDownload(
         volunteer.id,
-        type.id,
+        type.key,
         firstDownloader.id,
       );
       const second = await service.recordBundleDownload(
         volunteer.id,
-        type.id,
+        type.key,
         secondDownloader.id,
       );
 
       expect(second.downloadedByUserId).toBe(secondDownloader.id);
       const status = await service.getBundleDownloadStatus(
         volunteer.id,
-        type.id,
+        type.key,
       );
       expect(status?.downloadedByUserId).toBe(secondDownloader.id);
 
@@ -1511,8 +1496,8 @@ describe('ReimbursementRateService', () => {
           and(
             eq(schema.reimbursementBundleDownloads.volunteerId, volunteer.id),
             eq(
-              schema.reimbursementBundleDownloads.reimbursementTypeId,
-              type.id,
+              schema.reimbursementBundleDownloads.reimbursementTypeKey,
+              type.key,
             ),
           ),
         );
@@ -1526,7 +1511,7 @@ describe('ReimbursementRateService', () => {
       args: {
         templateId: string;
         volunteerId: string;
-        reimbursementTypeId: string;
+        reimbursementTypeKey: ReimbursementTypeKey;
         scopeUnitId: string;
         totalAmountCents?: number;
       },
@@ -1536,7 +1521,7 @@ describe('ReimbursementRateService', () => {
         .values({
           documentTemplateId: args.templateId,
           volunteerId: args.volunteerId,
-          reimbursementTypeId: args.reimbursementTypeId,
+          reimbursementTypeKey: args.reimbursementTypeKey,
           organizationUnitId: args.scopeUnitId,
           periodStart: new Date('2026-03-01T00:00:00.000Z'),
           periodEnd: new Date('2026-03-01T00:00:00.000Z'),
@@ -1558,20 +1543,20 @@ describe('ReimbursementRateService', () => {
       const downloader = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       const invoice = await insertReadyInvoice(db, {
         templateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         scopeUnitId: root.id,
       });
 
       await service.recordBundleDownload(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         downloader.id,
         [invoice.id],
       );
@@ -1591,20 +1576,20 @@ describe('ReimbursementRateService', () => {
       const secondDownloader = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       const invoice = await insertReadyInvoice(db, {
         templateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         scopeUnitId: root.id,
       });
 
       await service.recordBundleDownload(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         firstDownloader.id,
         [invoice.id],
       );
@@ -1614,7 +1599,7 @@ describe('ReimbursementRateService', () => {
 
       await service.recordBundleDownload(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         secondDownloader.id,
         [invoice.id],
       );
@@ -1633,26 +1618,26 @@ describe('ReimbursementRateService', () => {
       const downloader = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       const included = await insertReadyInvoice(db, {
         templateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         scopeUnitId: root.id,
       });
       const excluded = await insertReadyInvoice(db, {
         templateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         scopeUnitId: root.id,
       });
 
       await service.recordBundleDownload(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         downloader.id,
         [included.id],
       );
@@ -1671,20 +1656,20 @@ describe('ReimbursementRateService', () => {
       const downloader = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       const otherVolunteerInvoice = await insertReadyInvoice(db, {
         templateId: template.id,
         volunteerId: otherVolunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         scopeUnitId: root.id,
       });
 
       await service.recordBundleDownload(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         downloader.id,
         [otherVolunteerInvoice.id],
       );
@@ -1703,7 +1688,7 @@ describe('ReimbursementRateService', () => {
       await expect(
         service.recordBundleDownload(
           volunteer.id,
-          reimbursementType.id,
+          reimbursementType.key,
           downloader.id,
         ),
       ).resolves.toBeDefined();

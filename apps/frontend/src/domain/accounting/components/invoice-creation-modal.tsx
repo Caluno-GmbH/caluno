@@ -211,12 +211,12 @@ export function InvoiceCreationModal({
 
   const invoiceTemplateQuery = useActiveDocumentTemplate(
     apiDocumentKindFor('invoice'),
-    reimbursementType?.id,
+    reimbursementType?.key,
     orgUId,
   );
   const contractTemplateQuery = useActiveDocumentTemplate(
     apiDocumentKindFor('contract'),
-    reimbursementType?.id,
+    reimbursementType?.key,
     orgUId,
   );
   const template = invoiceTemplateQuery.data
@@ -247,7 +247,7 @@ export function InvoiceCreationModal({
 
   const eligibleQuery = useEligibleTimeEntriesForInvoice({
     volunteerId: volunteerId ?? undefined,
-    reimbursementTypeId: reimbursementType?.id,
+    reimbursementTypeKey: reimbursementType?.key,
     periodStart: periodBounds?.periodStart,
     periodEnd: periodBounds?.periodEnd,
   });
@@ -255,13 +255,13 @@ export function InvoiceCreationModal({
   // without the period, and this volunteer's hours under other types.
   const anyPeriodEligibleQuery = useEligibleTimeEntriesForInvoice({
     volunteerId: volunteerId ?? undefined,
-    reimbursementTypeId: reimbursementType?.id,
+    reimbursementTypeKey: reimbursementType?.key,
   });
   // Auto-closed hours nobody confirmed yet: listed under the eligible ones,
   // never selectable and never part of the totals.
   const awaitingReviewQuery = useTimeEntriesAwaitingReviewForInvoice({
     volunteerId: volunteerId ?? undefined,
-    reimbursementTypeId: reimbursementType?.id,
+    reimbursementTypeKey: reimbursementType?.key,
     periodStart: periodBounds?.periodStart,
     periodEnd: periodBounds?.periodEnd,
   });
@@ -272,7 +272,7 @@ export function InvoiceCreationModal({
   // The volunteer's usage, not the signed-in coordinator's.
   const yearlyUsageQuery = useYearlyUsage({
     volunteerId: volunteerId ?? undefined,
-    reimbursementTypeId: reimbursementType?.id,
+    reimbursementTypeKey: reimbursementType?.key,
     year: period.from?.getFullYear(),
     // The period end this invoice is saved with, which the PDF uses as its
     // cutoff, so the dialog and the document state the same figure.
@@ -283,7 +283,7 @@ export function InvoiceCreationModal({
   // coordinator's pending edit is layered on top of it below.
   const baselineQuery = useManualBaseline(
     volunteerId ?? undefined,
-    reimbursementType?.id,
+    reimbursementType?.key,
     periodYear,
   );
   const formatting = useFormatting();
@@ -451,7 +451,7 @@ export function InvoiceCreationModal({
     try {
       await createInvoice.mutateAsync({
         organizationUnitId: orgUId,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         volunteerId,
         periodStart: periodBounds.periodStart,
         periodEnd: periodBounds.periodEnd,
@@ -591,9 +591,9 @@ export function InvoiceCreationModal({
       ?.filter(
         (row) =>
           row.volunteer.id === volunteerId &&
-          row.reimbursementType.id !== reimbursementType?.id,
+          row.reimbursementTypeKey !== reimbursementType?.key,
       )
-      .map((row) => row.reimbursementType.key),
+      .map((row) => row.reimbursementTypeKey),
   });
   const hoursEmptyMessage =
     emptyReason?.kind === 'outside-period'

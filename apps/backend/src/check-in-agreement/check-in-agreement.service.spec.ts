@@ -1,3 +1,4 @@
+import { ReimbursementTypeKey } from '../accounting/enums';
 import { NotFoundGraphQLError } from '../graphql/errors';
 import { AgreementStatus } from './agreement-status.enum';
 import { AgreementStatusService } from './check-in-agreement.service';
@@ -10,9 +11,9 @@ function makeBaseDeps() {
   const shiftService = {
     findInstanceById: jest.fn().mockResolvedValue({
       id: 'si-1',
-      overrideReimbursementTypeId: null,
+      overrideReimbursementTypeKey: null,
       master: {
-        reimbursementTypeId: 'rt-1',
+        reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
         organizationUnitId: 'ou-1',
       },
     }),
@@ -35,21 +36,12 @@ function makeBaseDeps() {
     findOrganizationByUnitId: jest.fn().mockResolvedValue({ id: 'org-1' }),
   };
 
-  const db = {
-    query: {
-      reimbursementTypes: {
-        findFirst: jest.fn().mockResolvedValue({ key: 'EHRENAMT' }),
-      },
-    },
-  };
-
   return {
     shiftService,
     contractService,
     documentTemplateService,
     authService,
     organizationUnitDataService,
-    db,
   };
 }
 
@@ -60,7 +52,6 @@ function makeService(deps: ReturnType<typeof makeBaseDeps>) {
     deps.documentTemplateService as never,
     deps.authService as never,
     deps.organizationUnitDataService as never,
-    deps.db as never,
   );
 }
 
@@ -94,8 +85,8 @@ describe('AgreementStatusService.resolve', () => {
     const deps = makeBaseDeps();
     deps.shiftService.findInstanceById.mockResolvedValue({
       id: 'si-1',
-      overrideReimbursementTypeId: null,
-      master: { reimbursementTypeId: null, organizationUnitId: 'ou-1' },
+      overrideReimbursementTypeKey: null,
+      master: { reimbursementTypeKey: null, organizationUnitId: 'ou-1' },
     });
     const service = makeService(deps);
 

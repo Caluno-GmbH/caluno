@@ -1,3 +1,5 @@
+import { ReimbursementTypeKey } from '../../accounting/enums';
+
 jest.mock('nanoid', () => ({
   customAlphabet: () => () => 'abcdefghijkl',
 }));
@@ -98,66 +100,59 @@ describe('ShiftInstanceFieldResolver', () => {
     it('resolves the occurrence override without loading the master shift', async () => {
       const resolver = newResolver();
       const shiftLoad = jest.fn();
-      const keyLoad = jest.fn().mockResolvedValue('EHRENAMT');
       const loader = {
         shiftById: { load: shiftLoad },
-        reimbursementTypeKeyById: { load: keyLoad },
       } as unknown as ShiftLoader;
 
       const result = await resolver.reimbursementTypeKey(
         instance({
           id: 'instance-1',
-          overrideReimbursementTypeId: 'rt-override',
+          overrideReimbursementTypeKey: ReimbursementTypeKey.UEBUNGSLEITER,
         }),
         loader,
       );
 
-      expect(result).toBe('EHRENAMT');
-      expect(keyLoad).toHaveBeenCalledWith('rt-override');
+      expect(result).toBe('UEBUNGSLEITER');
       expect(shiftLoad).not.toHaveBeenCalled();
     });
 
     it('falls back to the master shift type when there is no override', async () => {
       const resolver = newResolver();
-      const shiftLoad = jest
-        .fn()
-        .mockResolvedValue({ reimbursementTypeId: 'rt-master' });
-      const keyLoad = jest.fn().mockResolvedValue('UEBUNGSLEITER');
+      const shiftLoad = jest.fn().mockResolvedValue({
+        reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
+      });
       const loader = {
         shiftById: { load: shiftLoad },
-        reimbursementTypeKeyById: { load: keyLoad },
       } as unknown as ShiftLoader;
 
       const result = await resolver.reimbursementTypeKey(
         instance({
           id: 'instance-1',
           masterId: 'shift-1',
-          overrideReimbursementTypeId: null,
+          overrideReimbursementTypeKey: null,
         }),
         loader,
       );
 
-      expect(result).toBe('UEBUNGSLEITER');
+      expect(result).toBe('EHRENAMT');
       expect(shiftLoad).toHaveBeenCalledWith('shift-1');
-      expect(keyLoad).toHaveBeenCalledWith('rt-master');
     });
 
     it('returns null without resolving a key when the occurrence is unpaid', async () => {
       const resolver = newResolver();
       const shiftLoad = jest
         .fn()
-        .mockResolvedValue({ reimbursementTypeId: null });
+        .mockResolvedValue({ reimbursementTypeKey: null });
       const keyLoad = jest.fn();
       const loader = {
         shiftById: { load: shiftLoad },
-        reimbursementTypeKeyById: { load: keyLoad },
       } as unknown as ShiftLoader;
 
       const result = await resolver.reimbursementTypeKey(
         instance({
           id: 'instance-1',
           masterId: 'shift-1',
-          overrideReimbursementTypeId: null,
+          overrideReimbursementTypeKey: null,
         }),
         loader,
       );
