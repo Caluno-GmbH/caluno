@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { type MissingProfileKey, toMissingProfileKeys } from '@repo/data';
 import {
   useContract,
+  useHoldBackgroundRefresh,
   useInvoice,
   useMyDocuments,
   useUpdateMyProfile,
@@ -245,12 +246,19 @@ function CompleteProfileForm({
   const {
     control,
     handleSubmit,
-    formState: { errors, isValid },
+    formState: { errors, isValid, isDirty },
   } = useForm<Record<string, string>>({
     resolver: zodResolver(schema) as Resolver<Record<string, string>>,
     defaultValues,
     mode: 'onChange',
   });
+
+  // While the sheet is open and the volunteer is filling in their profile, hold
+  // background refreshes so an incoming contract/invoice change does not reset
+  // the sheet mid-edit. Gated on `open` too: a typed-then-abandoned sheet keeps
+  // its values while closing, and a leaked hold would silently stop the feed
+  // from invalidating anything.
+  useHoldBackgroundRefresh(isDirty && open);
 
   const onSubmit = handleSubmit(async (values) => {
     try {

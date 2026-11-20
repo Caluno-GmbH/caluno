@@ -17,6 +17,7 @@ export * from '../auth/schemas/auth.schema';
 export * from '../auth/schemas/permission.schema';
 export * from '../auth/schemas/role.schema';
 export * from '../auth/schemas/role-permission.schema';
+export * from '../change-feed/schemas/change-feed-entry.schema';
 export * from '../event/schemas/event.schema';
 export * from '../event/schemas/event-invite.schema';
 export * from '../event/schemas/event-required-form.schema';

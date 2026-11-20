@@ -1,5 +1,6 @@
 'use client';
 
+import { useHoldBackgroundRefresh } from '@repo/data/react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,7 @@ export function DeclineReasonDialog({
   const t = useTranslations('Accounting.reimbursements.docs.declineDialog');
   const tCommon = useTranslations('Common');
   const [reason, setReason] = useState('');
+  useHoldBackgroundRefresh(open && reason !== '');
 
   function handleOpenChange(next: boolean) {
     if (!next) setReason('');

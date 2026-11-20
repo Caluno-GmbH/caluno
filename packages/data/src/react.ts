@@ -21,6 +21,14 @@ export * from './errors/data-error';
 export * from './generated/graphql';
 // Auth (better-auth client factory and enhanced methods)
 export * from './react/auth/auth-client';
+// Change feed (core: must never import `ee`)
+export {
+  type BackgroundRefreshHold,
+  useHoldBackgroundRefresh,
+} from './react/change-feed/background-refresh-hold';
+// Re-export the query-meta module so the TanStack `Register` augmentation
+// (meta.changeAreas) reaches consumers that only import from '@repo/data/react'.
+export * from './react/change-feed/query-meta';
 // Data fetching hooks
 export * from './react/hooks/use-accounting-delivery';
 export * from './react/hooks/use-accounting-setup-status';
@@ -30,7 +38,6 @@ export * from './react/hooks/use-available-events-infinite';
 export * from './react/hooks/use-available-shift-instance-day-counts';
 export * from './react/hooks/use-available-shift-instances-infinite';
 export * from './react/hooks/use-block';
-export * from './react/hooks/use-bundle-download';
 export * from './react/hooks/use-check-in';
 export * from './react/hooks/use-check-in-actions';
 export * from './react/hooks/use-check-in-context';

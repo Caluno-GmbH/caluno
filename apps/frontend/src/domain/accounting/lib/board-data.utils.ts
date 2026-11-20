@@ -1,5 +1,6 @@
 import type { ReimbursementTypeKey } from '@repo/data';
 import {
+  BundleDeliveryMethod,
   ContractStatus,
   type ContractSummary,
   EmailDeliveryStatus,
@@ -9,6 +10,7 @@ import {
   type RawVolunteerYearlyUsage,
   SigneeType,
 } from '@repo/data';
+import { parseISO } from 'date-fns';
 import { formats } from '@/lib/formatting/formats';
 import type { PauschalenType } from '../components/doc-type-header';
 import type { Signee, SigneeRole } from '../components/template/types';
@@ -380,14 +382,50 @@ export function mapInvoiceToBoardDoc(
     declinedBy: invoice.declinedByUser?.name ?? undefined,
     declinedAt: invoice.declinedAt ? new Date(invoice.declinedAt) : undefined,
     declinedAtRole: mapDeclinedAtRole(invoice.declinedAtSigneeType),
-    sentAt: invoice.lastEmailDelivery
-      ? new Date(invoice.lastEmailDelivery.occurredAt)
+    deliveredVia: invoice.lastDelivery
+      ? invoice.lastDelivery.method === BundleDeliveryMethod.Email
+        ? 'email'
+        : 'download'
       : undefined,
-    sentBy: invoice.lastEmailDelivery?.deliveredByUser?.name ?? undefined,
-    sendState: invoice.lastEmailDelivery
-      ? SEND_STATE[invoice.lastEmailDelivery.status]
+    sentAt: invoice.lastDelivery
+      ? parseISO(invoice.lastDelivery.occurredAt)
       : undefined,
+    sentBy: invoice.lastDelivery?.deliveredByUser?.name ?? undefined,
+    sendState: mapDeliveryToSendState(invoice.lastDelivery),
   };
+}
+
+function mapDeliveryToSendState(
+  lastDelivery: RawInvoice['lastDelivery'],
+): SendState | undefined {
+  if (!lastDelivery) return undefined;
+  // A download is terminal: it has no email status and is always "sent".
+  if (lastDelivery.method !== BundleDeliveryMethod.Email) return 'sent';
+  return lastDelivery.status ? SEND_STATE[lastDelivery.status] : undefined;
+}
+
+/**
+ * Timeline label key for one delivery row. The row is created when the bundle is
+ * queued, so "email" alone does not mean it reached accounting:
+ * PENDING/SENDING is still on its way and FAILED never arrived.
+ */
+export function deliveryTimelineLabelKey(
+  method: BundleDeliveryMethod,
+  status: EmailDeliveryStatus | null | undefined,
+):
+  | 'timelineSent'
+  | 'timelineSending'
+  | 'timelineSendFailed'
+  | 'timelineDownloaded' {
+  if (method !== BundleDeliveryMethod.Email) return 'timelineDownloaded';
+  if (
+    status === EmailDeliveryStatus.Pending ||
+    status === EmailDeliveryStatus.Sending
+  ) {
+    return 'timelineSending';
+  }
+  if (status === EmailDeliveryStatus.Failed) return 'timelineSendFailed';
+  return 'timelineSent';
 }
 
 const SEND_STATE: Record<EmailDeliveryStatus, SendState> = {

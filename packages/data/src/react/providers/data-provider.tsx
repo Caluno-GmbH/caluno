@@ -12,6 +12,11 @@ import {
   shouldThrowRedirectError,
 } from '../../errors/next-redirect';
 import {
+  BackgroundRefreshHoldProvider,
+  useBackgroundRefreshHoldState,
+} from '../change-feed/background-refresh-hold';
+import { useChangeFeed } from '../change-feed/use-change-feed';
+import {
   GraphQLClientProvider,
   SdkOnErrorProvider,
 } from '../hooks/use-graphql-client';
@@ -30,6 +35,12 @@ export interface DataProviderProps {
    * navigation instead of a stored error.
    */
   onError?: (error: DataError) => void;
+  /**
+   * Mount the change-feed poller: a background `ChangesSince` poll that
+   * invalidates queries by `meta.changeAreas`. Defaults to `false`, so public
+   * pages and accept-terms never poll. Signed-in layouts opt in.
+   */
+  changeFeed?: boolean;
 }
 
 function createQueryClient(): QueryClient {
@@ -62,9 +73,32 @@ export function DataProvider({
   organizationUnitId,
   locale,
   onError,
+  changeFeed = false,
 }: DataProviderProps) {
   const [ownQueryClient] = useState(createQueryClient);
   const queryClient = customQueryClient ?? ownQueryClient;
+
+  const outerFeed = useBackgroundRefreshHoldState();
+  const holdState = useChangeFeed({
+    enabled: changeFeed,
+    apiUrl,
+    organizationUnitId,
+    locale,
+    queryClient,
+  });
+
+  // A nested page-level provider has its own QueryClient. It runs no poller of
+  // its own, so it registers with the layout's feed to receive its
+  // invalidations.
+  const registerWithOuterFeed = holdState
+    ? null
+    : outerFeed?.registerQueryClient;
+  useEffect(() => {
+    if (!registerWithOuterFeed) {
+      return;
+    }
+    return registerWithOuterFeed(queryClient);
+  }, [registerWithOuterFeed, queryClient]);
 
   useEffect(() => {
     function handlePageShow(event: PageTransitionEvent) {
@@ -92,12 +126,17 @@ export function DataProvider({
     });
   }, [apiUrl, organizationUnitId, locale]);
 
+  // A nested DataProvider without its own feed passes the outer feed through,
+  // so holds taken inside it still reach the layout's poller. Always rendering
+  // the provider keeps the subtree from remounting if `changeFeed` changes.
   return (
     <QueryClientProvider client={queryClient}>
       <GraphQLClientProvider value={graphqlClient}>
         <SdkOnErrorProvider onError={onError}>
-          {children}
-          {showDevTools && <ReactQueryDevtools />}
+          <BackgroundRefreshHoldProvider value={holdState ?? outerFeed}>
+            {children}
+            {showDevTools && <ReactQueryDevtools />}
+          </BackgroundRefreshHoldProvider>
         </SdkOnErrorProvider>
       </GraphQLClientProvider>
     </QueryClientProvider>

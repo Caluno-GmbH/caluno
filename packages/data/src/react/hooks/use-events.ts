@@ -1,7 +1,11 @@
 'use client';
 
 import { EventRepository, PublicEventRepository } from '@repo/data';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  type QueryClient,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import type {
   CreateEventInput,
   UpdateEventInput,
@@ -72,6 +76,19 @@ export function useDeleteEvent() {
   });
 }
 
+/**
+ * Inviting members changes the event's invite list, which the event detail and
+ * the "my events" lists read (VOLI-1620).
+ */
+export function invalidateInviteMembersToEventQueries(
+  queryClient: QueryClient,
+  eventId: string,
+) {
+  queryClient.invalidateQueries({ queryKey: ['eventInvites', eventId] });
+  queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+  queryClient.invalidateQueries({ queryKey: ['myEvents'] });
+}
+
 export function useInviteMembersToEvent() {
   const sdk = useSdk();
   const queryClient = useQueryClient();
@@ -85,9 +102,8 @@ export function useInviteMembersToEvent() {
       eventId: string;
       memberIds: string[];
     }) => repository.inviteMembers(eventId, memberIds),
-    onSuccess: (_, { eventId }) => {
-      queryClient.invalidateQueries({ queryKey: ['eventInvites', eventId] });
-    },
+    onSuccess: (_, { eventId }) =>
+      invalidateInviteMembersToEventQueries(queryClient, eventId),
   });
 }
 
