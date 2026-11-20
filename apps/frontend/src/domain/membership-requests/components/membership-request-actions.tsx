@@ -2,7 +2,11 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { MembershipRequestStatus } from '@repo/data';
-import { useApproveMembershipRequest, useQueryClient } from '@repo/data/react';
+import {
+  useApproveMembershipRequest,
+  useHoldBackgroundRefresh,
+  useQueryClient,
+} from '@repo/data/react';
 import {
   Button,
   Dialog,
@@ -60,8 +64,15 @@ export function MembershipRequestActions({
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = form;
+
+  // While the rejection dialog is open and the admin is typing a reason, hold
+  // background refreshes so an incoming change does not swap the dialog out
+  // from under them. Gated on the open flag too: a dismissed dialog keeps the
+  // typed value (shouldUnregister: false), and a leaked hold would silently
+  // stop the feed from invalidating anything.
+  useHoldBackgroundRefresh(isDirty && isRejectDialogOpen);
 
   const invalidateQuery = (status: MembershipRequestStatus) => {
     queryClient.invalidateQueries({

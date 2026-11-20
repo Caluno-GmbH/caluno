@@ -1,7 +1,7 @@
 'use client';
 
 import { type FieldType, RequiredFormTargetType } from '@repo/data';
-import { useQueryClient } from '@tanstack/react-query';
+import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { OrganizationRepository } from '../../repositories/organization/organization.repository';
 import { RequirementFormRepository } from '../../repositories/requirementForm/requirement-form.repository';
 import { useSdk } from './use-graphql-client';
@@ -68,12 +68,52 @@ export function useSetRequiredForms() {
       organizationUnitId: string;
       formIds: string[];
     }) => repository.setRequiredForms(organizationUnitId, formIds),
-    onSuccess: (_, { organizationUnitId }) => {
-      queryClient.invalidateQueries({
-        queryKey: ['organization-unit', organizationUnitId],
-      });
-    },
+    onSuccess: (_, { organizationUnitId }) =>
+      invalidateSetRequiredFormsQueries(queryClient, organizationUnitId),
   });
+}
+
+/**
+ * Setting required forms changes what the public join page asks for, so a join
+ * page opened before the change has to refetch too (VOLI-1620).
+ */
+export function invalidateSetRequiredFormsQueries(
+  queryClient: QueryClient,
+  organizationUnitId: string,
+) {
+  queryClient.invalidateQueries({
+    queryKey: ['organization-unit', organizationUnitId],
+  });
+  queryClient.invalidateQueries({
+    queryKey: ['publicOrganizationUnit', organizationUnitId],
+  });
+}
+
+/**
+ * Submitting a form flips its "already submitted" state. The mutation knows
+ * neither the submitter nor, for event targets, the unit, so the submission
+ * lists are refreshed by prefix (VOLI-1620).
+ */
+export function invalidateSubmitRequiredFormQueries(
+  queryClient: QueryClient,
+  targetType: RequiredFormTargetType,
+  targetId: string,
+) {
+  if (targetType === RequiredFormTargetType.OrganizationUnit) {
+    queryClient.invalidateQueries({
+      queryKey: ['organization-unit', targetId],
+    });
+  }
+  if (targetType === RequiredFormTargetType.Event) {
+    queryClient.invalidateQueries({
+      queryKey: ['publicEvent', targetId],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ['event', targetId],
+    });
+  }
+  queryClient.invalidateQueries({ queryKey: ['myFormSubmissions'] });
+  queryClient.invalidateQueries({ queryKey: ['formSubmissionsForVolunteer'] });
 }
 
 export function useSubmitRequiredForm() {
@@ -94,20 +134,7 @@ export function useSubmitRequiredForm() {
       values: Array<{ fieldId: string; blockId: string; value: string }>;
     }) =>
       repository.submitRequiredForm(targetType, targetId, formId, { values }),
-    onSuccess: (_, { targetType, targetId }) => {
-      if (targetType === RequiredFormTargetType.OrganizationUnit) {
-        queryClient.invalidateQueries({
-          queryKey: ['organization-unit', targetId],
-        });
-      }
-      if (targetType === RequiredFormTargetType.Event) {
-        queryClient.invalidateQueries({
-          queryKey: ['publicEvent', targetId],
-        });
-        queryClient.invalidateQueries({
-          queryKey: ['event', targetId],
-        });
-      }
-    },
+    onSuccess: (_, { targetType, targetId }) =>
+      invalidateSubmitRequiredFormQueries(queryClient, targetType, targetId),
   });
 }

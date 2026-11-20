@@ -58,3 +58,21 @@ export class InvoiceEmailDelivery {
   @Field(() => EmailDeliveryStatus)
   status!: EmailDeliveryStatus;
 }
+
+@ObjectType()
+export class InvoiceDelivery {
+  @Field(() => ID)
+  id!: string;
+
+  @Field(() => BundleDeliveryMethod)
+  method!: BundleDeliveryMethod;
+
+  @Field(() => Date)
+  occurredAt!: Date;
+
+  @Field(() => User, { nullable: true })
+  deliveredByUser?: User | null;
+
+  @Field(() => EmailDeliveryStatus, { nullable: true })
+  status?: EmailDeliveryStatus | null;
+}

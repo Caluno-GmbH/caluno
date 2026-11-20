@@ -11,6 +11,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
+import { ChangeArea } from '../change-feed/query-meta';
 import { useSdk } from './use-graphql-client';
 import { useMutation } from './use-mutation';
 
@@ -23,6 +24,7 @@ export function useContracts(filter?: ContractFilterInput) {
     queryFn: () => repository.findContracts(filter),
     staleTime: 30 * 1000,
     refetchOnMount: 'always',
+    meta: { changeAreas: [ChangeArea.Contracts] },
   });
 }
 
@@ -39,6 +41,7 @@ export function useMyContracts(
     queryKey: ['accounting', 'my-contracts', filter, organizationUnitId],
     queryFn: () => repository.findMyContracts(filter),
     staleTime: 30 * 1000,
+    meta: { changeAreas: [ChangeArea.Contracts] },
   });
 }
 
@@ -51,6 +54,7 @@ export function useContract(id?: string) {
     queryFn: () => repository.findContractById(id ?? ''),
     staleTime: 30 * 1000,
     enabled: !!id,
+    meta: { changeAreas: [ChangeArea.Contracts] },
   });
 }
 

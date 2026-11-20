@@ -5,6 +5,7 @@ import {
   type MyDocumentsGroupData,
 } from '@repo/data';
 import { useQuery } from '@tanstack/react-query';
+import { ChangeArea } from '../change-feed/query-meta';
 import { useSdk } from './use-graphql-client';
 
 /**
@@ -21,6 +22,7 @@ export function useMyDocuments() {
     queryKey: ['accounting', 'my-documents'],
     queryFn: () => repository.findMyDocuments(),
     staleTime: 30 * 1000,
+    meta: { changeAreas: [ChangeArea.Contracts, ChangeArea.Invoices] },
   });
 }
 
@@ -37,5 +39,6 @@ export function useMyDocumentSummary() {
     queryKey: ['accounting', 'my-document-summary'],
     queryFn: () => repository.findMyDocumentSummary(),
     staleTime: 30 * 1000,
+    meta: { changeAreas: [ChangeArea.Contracts, ChangeArea.Invoices] },
   });
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { ClientError } from 'graphql-request';
-import { DataError } from './data-error';
+import { DataError, isUnauthenticatedDataError } from './data-error';
 import { createSdkErrorWrapper, fromGraphQLError } from './translate';
 
 // Shaped exactly like the response graphql-request wraps in a ClientError when
@@ -47,6 +47,20 @@ describe('fromGraphQLError', () => {
     expect(dataError.message).toBe('An unexpected error occurred');
     expect(dataError.cause).toBe(transport);
     expect(dataError.options?.cause).toBe(transport);
+  });
+
+  it('keeps the HTTP status of a response without GraphQL errors', () => {
+    // A proxy or session layer can answer 401 with a plain body; the login
+    // redirect and the change-feed poller both key off that status.
+    const unauthorized = new ClientError(
+      { status: 401, body: 'Unauthorized' } as never,
+      {} as never,
+    );
+    const dataError = fromGraphQLError(unauthorized);
+
+    expect(dataError.message).toBe('An unexpected error occurred');
+    expect(dataError.options?.statusCode).toBe(401);
+    expect(isUnauthenticatedDataError(dataError)).toBe(true);
   });
 
   it('preserves a duck-typed DataError across dual-package copies', () => {

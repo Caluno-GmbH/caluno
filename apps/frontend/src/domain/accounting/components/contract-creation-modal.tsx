@@ -13,6 +13,7 @@ import {
   useCreateContract,
   useCurrentOrg,
   useEffectiveRates,
+  useHoldBackgroundRefresh,
   useOrgUId,
   usePermissions,
   useReimbursementTypes,
@@ -125,6 +126,10 @@ export function ContractCreationModal({
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [sendErrorCode, setSendErrorCode] = useState<string | null>(null);
+
+  // The fields are seeded from the profile and template queries, so a
+  // background refetch while the coordinator composes would reshuffle them.
+  useHoldBackgroundRefresh(open);
 
   /** Changes when the coordinator edits the template, which the fields follow. */
   const templateIdentity = templateQuery.data

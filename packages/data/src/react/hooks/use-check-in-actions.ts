@@ -1,6 +1,6 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
+import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { MembershipRequestRepository } from '../../repositories/membershipRequest/membershipRequest.repository';
 import { ShiftRepository } from '../../repositories/shift/shift.repository';
 import { TimeEntryRepository } from '../../repositories/time-entry/time-entry.repository';
@@ -56,6 +56,34 @@ export function useCheckInAddToShiftInstance(organizationUnitId: string) {
   });
 }
 
+/**
+ * Approving a membership request turns a volunteer into a member, so every
+ * check-in view that reads membership state has to refetch: the manual
+ * check-in readiness, the pending-request queue, the nav badge count and the
+ * volunteer list (VOLI-1620).
+ */
+export function invalidateCheckInApproveQueries(
+  queryClient: QueryClient,
+  organizationUnitId: string,
+) {
+  queryClient.invalidateQueries({ queryKey: ['check-in-context'] });
+  queryClient.invalidateQueries({ queryKey: ['check-in-required-forms'] });
+  queryClient.invalidateQueries({
+    queryKey: ['membershipRequests', organizationUnitId],
+  });
+  queryClient.invalidateQueries({
+    queryKey: ['membershipRequestCount', organizationUnitId],
+  });
+  queryClient.invalidateQueries({
+    queryKey: ['organization-volunteers', organizationUnitId],
+  });
+  // Returning the readiness refetch keeps the mutation pending until the
+  // card has moved past the accepted request, so it cannot be tapped twice.
+  return queryClient.invalidateQueries({
+    queryKey: ['check-in-readiness', organizationUnitId],
+  });
+}
+
 export function useCheckInApproveMembershipRequest(organizationUnitId: string) {
   const sdk = useSdk();
   const queryClient = useQueryClient();
@@ -64,14 +92,7 @@ export function useCheckInApproveMembershipRequest(organizationUnitId: string) {
   return useMutation({
     mutationFn: (requestId: string) =>
       repository.checkInApprove(requestId, organizationUnitId),
-    // Returning the readiness refetch keeps the mutation pending until the
-    // card has moved past the accepted request, so it cannot be tapped twice.
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['check-in-context'] });
-      queryClient.invalidateQueries({ queryKey: ['check-in-required-forms'] });
-      return queryClient.invalidateQueries({
-        queryKey: ['check-in-readiness', organizationUnitId],
-      });
-    },
+    onSuccess: () =>
+      invalidateCheckInApproveQueries(queryClient, organizationUnitId),
   });
 }

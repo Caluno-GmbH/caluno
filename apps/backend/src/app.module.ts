@@ -19,6 +19,7 @@ import { AuthModule } from './auth/auth.module';
 import { createBetterAuthPinoLogger } from './auth/better-auth-logger';
 import { createSessionCachingAuthGuard } from './auth/guards/auth.guard';
 import { PermissionGuard } from './auth/guards/permission.guard';
+import { ChangeFeedModule } from './change-feed/change-feed.module';
 import { CheckInAgreementModule } from './check-in-agreement/check-in-agreement.module';
 import { type Database, DatabaseModule } from './database/database.module';
 import { DATABASE_CONNECTION } from './database/database-connection';
@@ -281,6 +282,7 @@ const autoSchemaFile =
     AuthModule,
     AccountingModule,
     ExportModule,
+    ChangeFeedModule,
     ...loadEeModules(),
   ],
   controllers: [],
