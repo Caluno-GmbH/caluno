@@ -32,7 +32,7 @@ export function SubjectVariableChips({
               type="button"
               variant="outline"
               disabled={disabled}
-              className="h-10 rounded-full px-3 font-mono text-sm"
+              className="h-10 px-3 text-sm"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => onInsert(name)}
             >
