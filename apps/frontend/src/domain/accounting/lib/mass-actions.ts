@@ -150,6 +150,48 @@ export function firstBlockingDocId(pairs: DocVolPair[]): string | null {
   );
 }
 
+// ─── Bundle identity ──────────────────────────────────────────────────────────
+
+/** Stable identity of a bundle: one volunteer × one Pauschale. */
+export function bundleKey(group: {
+  volunteerId: string;
+  pauschale: PauschalenType;
+}): string {
+  return `${group.volunteerId}::${group.pauschale}`;
+}
+
+// ─── Bounded fan-out ──────────────────────────────────────────────────────────
+
+/**
+ * `Promise.all` with at most `limit` calls in flight. Used for the mass send
+ * previews: "select all" can cover hundreds of bundles and the preview builds
+ * each bundle's document set server-side, so firing them all at once would
+ * hammer both the API and the mail/PDF pipeline.
+ */
+export async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  if (items.length === 0) return [];
+  const size = Math.max(1, Math.min(limit, items.length));
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      const item = items[index];
+      if (item === undefined) continue;
+      results[index] = await fn(item, index);
+    }
+  }
+
+  await Promise.all(Array.from({ length: size }, () => worker()));
+  return results;
+}
+
 // ─── Async result summary ─────────────────────────────────────────────────────
 
 /** Counts fulfilled vs rejected from a `Promise.allSettled` result array. */
@@ -168,11 +210,24 @@ export function summarizeSettled<T>(results: PromiseSettledResult<T>[]): {
 
 // ─── Send bundle routing ──────────────────────────────────────────────────────
 
-/** Why a previewed bundle cannot be emailed as-is, or `null` when it is sendable. */
-export type BundleSendBlock = 'too-large' | 'no-recipient';
+/**
+ * Why a previewed bundle cannot be emailed as-is. `preview-failed` means the
+ * preview itself could not run (network error, missing type), so the bundle is
+ * not necessarily unsendable — it needs a retry, not a "too large" verdict.
+ */
+export type BundleNeedsAttentionReason =
+  | 'too-large'
+  | 'no-recipient'
+  | 'preview-failed';
+
+/** The two email blockers; `preview-failed` deliberately is not one of them. */
+export type BundleSendBlock = Extract<
+  BundleNeedsAttentionReason,
+  'too-large' | 'no-recipient'
+>;
 
 /**
- * The single rule that decides whether a previewed bundle can be sent by email.
+ * The rule that decides whether a previewed bundle can be sent by email.
  * Both the single-row send (volunteer group) and the mass send (board dialog)
  * route on this, so the "too large / no recipient" decision lives in one place.
  */
@@ -185,20 +240,63 @@ export function bundleSendBlock(preview: {
   return null;
 }
 
+/** One bundle preview, as produced by the mass-send fan-out. */
+export interface BundlePreviewOutcome {
+  group: BundleGroup;
+  recipientEmail: string | null;
+  fitsInEmail: boolean;
+  issues: BundleDeliveryIssue[];
+  subject: string;
+  /** The preview call itself failed, so recipient/size are unknown. */
+  previewFailed?: boolean;
+}
+
+export interface SendableBundle {
+  group: BundleGroup;
+  recipientEmail: string;
+  issues: BundleDeliveryIssue[];
+  /** Previewed subject, echoed back so the send acknowledges what was shown. */
+  subject: string;
+}
+
+export interface BundleNeedingAttention {
+  group: BundleGroup;
+  reason: BundleNeedsAttentionReason;
+}
+
 /**
- * Splits bundle-send previews into `sendable` (has recipient + fits in email)
- * and `needsAttention` (missing recipient or too large). Extra fields on each
- * preview item pass through unchanged — a later task attaches `issues` here.
+ * Routes each preview to the confirm dialog's "send" list or its
+ * "needs attention" list, keeping the reason distinct so a failed preview is
+ * never presented as "too large". Only `sendable` items carry a recipient, so
+ * the caller never has to cast it.
  */
-export function splitSendableBundles<
-  T extends { recipientEmail: string | null; fitsInEmail: boolean },
->(previews: T[]): { sendable: T[]; needsAttention: T[] } {
-  const sendable: T[] = [];
-  const needsAttention: T[] = [];
-  for (const p of previews) {
-    if (bundleSendBlock(p)) needsAttention.push(p);
-    else sendable.push(p);
+export function splitBundlePreviews(outcomes: BundlePreviewOutcome[]): {
+  sendable: SendableBundle[];
+  needsAttention: BundleNeedingAttention[];
+} {
+  const sendable: SendableBundle[] = [];
+  const needsAttention: BundleNeedingAttention[] = [];
+
+  for (const outcome of outcomes) {
+    if (outcome.previewFailed) {
+      needsAttention.push({ group: outcome.group, reason: 'preview-failed' });
+      continue;
+    }
+    const block = bundleSendBlock(outcome);
+    if (block) {
+      needsAttention.push({ group: outcome.group, reason: block });
+      continue;
+    }
+    // `bundleSendBlock` returned null, so both checks above passed; the
+    // assertion is only needed because TS cannot narrow through the helper.
+    sendable.push({
+      group: outcome.group,
+      recipientEmail: outcome.recipientEmail as string,
+      issues: outcome.issues,
+      subject: outcome.subject,
+    });
   }
+
   return { sendable, needsAttention };
 }
 

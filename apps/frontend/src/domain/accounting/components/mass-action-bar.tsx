@@ -9,7 +9,8 @@ interface MassActionBarProps {
   contractCount: number;
   timesheetCount: number;
   bundleCount: number;
-  bundleMode: 'send' | 'download';
+  /** `null` until the org's delivery settings are known — no bundle CTA then. */
+  bundleMode: 'send' | 'download' | null;
   busyAction: 'contracts' | 'timesheets' | 'bundles' | null;
   onCountersignContracts: () => void;
   onCountersignTimesheets: () => void;
@@ -53,14 +54,15 @@ export function MassActionBar({
         label: t('countersignTimesheets', { count: timesheetCount }),
         onClick: onCountersignTimesheets,
       },
-      bundleCount > 0 && {
-        key: 'bundles' as const,
-        label:
-          bundleMode === 'send'
-            ? t('sendBundles', { count: bundleCount })
-            : t('downloadBundles', { count: bundleCount }),
-        onClick: onSendBundles,
-      },
+      bundleMode !== null &&
+        bundleCount > 0 && {
+          key: 'bundles' as const,
+          label:
+            bundleMode === 'send'
+              ? t('sendBundles', { count: bundleCount })
+              : t('downloadBundles', { count: bundleCount }),
+          onClick: onSendBundles,
+        },
     ] as (CtaDef | false)[]
   ).filter((x): x is CtaDef => Boolean(x));
 

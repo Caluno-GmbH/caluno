@@ -1,6 +1,5 @@
 'use client';
 
-import type { BundleDeliveryIssue } from '@repo/data';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,33 +16,21 @@ import { Loader2Icon, TriangleAlertIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
-import type { BundleGroup } from '../lib/mass-actions';
-
-interface SendableBundle {
-  group: BundleGroup;
-  recipientEmail: string;
-  issues: BundleDeliveryIssue[];
-}
+import {
+  type BundleNeedingAttention,
+  bundleKey,
+  type SendableBundle,
+} from '../lib/mass-actions';
+import { PAUSCHALE_LABEL_KEY } from '../lib/reimbursement-type-mapping';
 
 interface BundleBatchConfirmDialogProps {
   open: boolean;
   sendable: SendableBundle[];
-  needsAttention: {
-    group: BundleGroup;
-    reason: 'no-recipient' | 'too-large';
-  }[];
+  needsAttention: BundleNeedingAttention[];
   isSending: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (keysToSend: string[]) => void;
 }
-
-const PAUSCHALE_TYPE_KEY = {
-  ehrenamt: 'toolbar.typeEP',
-  uebungsleiter: 'toolbar.typeUL',
-} as const;
-
-const keyOf = (group: BundleGroup) =>
-  `${group.volunteerId}::${group.pauschale}`;
 
 export function BundleBatchConfirmDialog({
   open,
@@ -78,10 +65,10 @@ export function BundleBatchConfirmDialog({
   }
 
   const keysToSend = [
-    ...clean.map(({ group }) => keyOf(group)),
+    ...clean.map(({ group }) => bundleKey(group)),
     ...flagged
-      .filter(({ group }) => optedIn.has(keyOf(group)))
-      .map(({ group }) => keyOf(group)),
+      .filter(({ group }) => optedIn.has(bundleKey(group)))
+      .map(({ group }) => bundleKey(group)),
   ];
   const sendCount = keysToSend.length;
 
@@ -97,7 +84,7 @@ export function BundleBatchConfirmDialog({
           <ul className="space-y-3">
             {clean.map(({ group, recipientEmail }) => (
               <li
-                key={keyOf(group)}
+                key={bundleKey(group)}
                 className="space-y-2 rounded-lg border p-3"
               >
                 <div className="flex items-center justify-between gap-3">
@@ -110,7 +97,7 @@ export function BundleBatchConfirmDialog({
                 </div>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <Badge variant="neutral">
-                    {tBoard(PAUSCHALE_TYPE_KEY[group.pauschale])}
+                    {tBoard(PAUSCHALE_LABEL_KEY[group.pauschale])}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
                     {t('recipientLine', { email: recipientEmail })}
@@ -128,7 +115,7 @@ export function BundleBatchConfirmDialog({
             </p>
             <ul className="space-y-3">
               {flagged.map(({ group, recipientEmail, issues }) => {
-                const key = keyOf(group);
+                const key = bundleKey(group);
                 const checked = optedIn.has(key);
                 const checkboxId = `send-anyway-${group.volunteerId}-${group.pauschale}`;
                 return (
@@ -146,7 +133,7 @@ export function BundleBatchConfirmDialog({
                     </div>
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <Badge variant="neutral">
-                        {tBoard(PAUSCHALE_TYPE_KEY[group.pauschale])}
+                        {tBoard(PAUSCHALE_LABEL_KEY[group.pauschale])}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
                         {t('recipientLine', { email: recipientEmail })}
@@ -196,14 +183,14 @@ export function BundleBatchConfirmDialog({
             <ul className="space-y-3">
               {needsAttention.map(({ group, reason }) => (
                 <li
-                  key={keyOf(group)}
+                  key={bundleKey(group)}
                   className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3"
                 >
                   <p className="text-base font-semibold text-foreground">
                     {group.volunteerName}
                   </p>
                   <Badge variant="neutral">
-                    {tBoard(PAUSCHALE_TYPE_KEY[group.pauschale])}
+                    {tBoard(PAUSCHALE_LABEL_KEY[group.pauschale])}
                   </Badge>
                   <div className="flex items-start gap-2 text-sm text-destructive">
                     <TriangleAlertIcon
@@ -212,9 +199,11 @@ export function BundleBatchConfirmDialog({
                       aria-hidden="true"
                     />
                     <span>
-                      {reason === 'no-recipient'
-                        ? tBundle('noRecipient')
-                        : tBundle('sendTooLarge')}
+                      {reason === 'preview-failed'
+                        ? t('previewFailed')
+                        : reason === 'no-recipient'
+                          ? tBundle('noRecipient')
+                          : tBundle('sendTooLarge')}
                     </span>
                   </div>
                 </li>

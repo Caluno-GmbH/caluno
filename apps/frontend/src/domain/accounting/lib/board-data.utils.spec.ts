@@ -15,6 +15,7 @@ import {
   contractPeriodOverlapsYear,
   contractStatusToDocStatus,
   creationTargetFor,
+  deliveryTimelineLabelKey,
   documentRowAction,
   formatMonthYear,
   getContractStateForPicker,
@@ -1971,5 +1972,46 @@ describe('initialLifespanFor', () => {
       }),
     ).toBeNull();
     expect(initialLifespanFor({ status: 'contract-draft' })).toBeNull();
+  });
+});
+
+describe('deliveryTimelineLabelKey', () => {
+  it('marks a download as downloaded, whatever the (absent) email status', () => {
+    expect(deliveryTimelineLabelKey(BundleDeliveryMethod.Download, null)).toBe(
+      'timelineDownloaded',
+    );
+  });
+
+  it('does not claim a queued or sending email was sent', () => {
+    expect(
+      deliveryTimelineLabelKey(
+        BundleDeliveryMethod.Email,
+        EmailDeliveryStatus.Pending,
+      ),
+    ).toBe('timelineSending');
+    expect(
+      deliveryTimelineLabelKey(
+        BundleDeliveryMethod.Email,
+        EmailDeliveryStatus.Sending,
+      ),
+    ).toBe('timelineSending');
+  });
+
+  it('marks a failed email as failed, not sent', () => {
+    expect(
+      deliveryTimelineLabelKey(
+        BundleDeliveryMethod.Email,
+        EmailDeliveryStatus.Failed,
+      ),
+    ).toBe('timelineSendFailed');
+  });
+
+  it('marks a settled email as sent', () => {
+    expect(
+      deliveryTimelineLabelKey(
+        BundleDeliveryMethod.Email,
+        EmailDeliveryStatus.Sent,
+      ),
+    ).toBe('timelineSent');
   });
 });

@@ -2,14 +2,17 @@ import { describe, expect, it } from 'bun:test';
 import { ReimbursementTypeKey } from '@repo/data';
 import type { BoardDocument, BoardVolunteer, DocVolPair } from './board-types';
 import {
+  type BundleGroup,
   buildBundleSendArgs,
+  bundleKey,
   bundleSendBlock,
   contractIdsToCountersign,
   firstBlockingDocId,
   groupBundles,
+  mapWithConcurrency,
   resolveSelectedPairs,
   selectableDocIds,
-  splitSendableBundles,
+  splitBundlePreviews,
   summarizeSettled,
   timesheetIdsToCountersign,
   visibleDocPairsInOrder,
@@ -253,6 +256,43 @@ describe('timesheetIdsToCountersign', () => {
 
 // ─── summarizeSettled ─────────────────────────────────────────────────────────
 
+describe('mapWithConcurrency', () => {
+  it('preserves input order regardless of completion order', async () => {
+    const result = await mapWithConcurrency([3, 1, 2], 2, async (n) => {
+      await new Promise((resolve) => setTimeout(resolve, n));
+      return n * 10;
+    });
+    expect(result).toEqual([30, 10, 20]);
+  });
+
+  it('never runs more than `limit` calls at once', async () => {
+    let active = 0;
+    let peak = 0;
+    await mapWithConcurrency([1, 2, 3, 4, 5, 6], 2, async () => {
+      active += 1;
+      peak = Math.max(peak, active);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      active -= 1;
+    });
+    expect(peak).toBeLessThanOrEqual(2);
+  });
+
+  it('returns an empty array for empty input without calling fn', async () => {
+    const calls: number[] = [];
+    const result = await mapWithConcurrency([], 4, async (n: number) => {
+      calls.push(n);
+      return n;
+    });
+    expect(result).toEqual([]);
+    expect(calls).toEqual([]);
+  });
+
+  it('caps the pool at the item count when limit exceeds it', async () => {
+    const result = await mapWithConcurrency([1, 2], 10, async (n) => n + 1);
+    expect(result).toEqual([2, 3]);
+  });
+});
+
 describe('summarizeSettled', () => {
   it('counts fulfilled and rejected results', () => {
     const results: PromiseSettledResult<string>[] = [
@@ -278,43 +318,80 @@ describe('summarizeSettled', () => {
   });
 });
 
-// ─── splitSendableBundles ─────────────────────────────────────────────────────
+// ─── splitBundlePreviews ──────────────────────────────────────────────────────
 
-describe('splitSendableBundles', () => {
-  it('routes no-recipient items to needsAttention', () => {
-    const previews = [
-      { recipientEmail: null, fitsInEmail: true },
-      { recipientEmail: 'test@example.com', fitsInEmail: true },
-    ];
-    const { sendable, needsAttention } = splitSendableBundles(previews);
-    expect(sendable).toHaveLength(1);
-    expect(needsAttention).toHaveLength(1);
-    expect(needsAttention[0]?.recipientEmail).toBeNull();
+describe('splitBundlePreviews', () => {
+  const group: BundleGroup = {
+    volunteerId: 'vol-1',
+    volunteerName: 'Anna Müller',
+    pauschale: 'ehrenamt',
+    reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
+    invoiceIds: ['inv-1'],
+  };
+  const outcome = (overrides: Record<string, unknown> = {}) => ({
+    group,
+    recipientEmail: 'accounting@example.org',
+    fitsInEmail: true,
+    issues: [],
+    subject: 'Abrechnung',
+    ...overrides,
   });
 
-  it('routes !fitsInEmail items to needsAttention', () => {
-    const previews = [
-      { recipientEmail: 'a@example.com', fitsInEmail: false },
-      { recipientEmail: 'b@example.com', fitsInEmail: true },
-    ];
-    const { sendable, needsAttention } = splitSendableBundles(previews);
-    expect(sendable).toHaveLength(1);
-    expect(needsAttention).toHaveLength(1);
-    expect(needsAttention[0]?.recipientEmail).toBe('a@example.com');
-  });
-
-  it('passes through extra fields on richer objects', () => {
-    const previews = [
+  it('keeps sendable previews with their recipient, issues and subject', () => {
+    const { sendable, needsAttention } = splitBundlePreviews([outcome()]);
+    expect(needsAttention).toEqual([]);
+    expect(sendable).toEqual([
       {
-        recipientEmail: 'a@example.com',
-        fitsInEmail: true,
-        issues: ['warn-1'],
+        group,
+        recipientEmail: 'accounting@example.org',
+        issues: [],
+        subject: 'Abrechnung',
       },
-      { recipientEmail: null, fitsInEmail: true, issues: [] },
-    ];
-    const { sendable, needsAttention } = splitSendableBundles(previews);
-    expect(sendable[0]?.issues).toEqual(['warn-1']);
-    expect(needsAttention[0]?.issues).toEqual([]);
+    ]);
+  });
+
+  it('routes a missing recipient as no-recipient', () => {
+    const { sendable, needsAttention } = splitBundlePreviews([
+      outcome({ recipientEmail: null }),
+    ]);
+    expect(sendable).toEqual([]);
+    expect(needsAttention).toEqual([{ group, reason: 'no-recipient' }]);
+  });
+
+  it('routes an oversized preview as too-large', () => {
+    const { needsAttention } = splitBundlePreviews([
+      outcome({ fitsInEmail: false }),
+    ]);
+    expect(needsAttention).toEqual([{ group, reason: 'too-large' }]);
+  });
+
+  it('routes a failed preview as preview-failed, never as too-large', () => {
+    const { sendable, needsAttention } = splitBundlePreviews([
+      outcome({
+        recipientEmail: null,
+        fitsInEmail: false,
+        previewFailed: true,
+      }),
+    ]);
+    expect(sendable).toEqual([]);
+    expect(needsAttention).toEqual([{ group, reason: 'preview-failed' }]);
+  });
+});
+
+// ─── bundleKey ───────────────────────────────────────────────────────────────
+
+describe('bundleKey', () => {
+  it('identifies a bundle by volunteer and Pauschale', () => {
+    expect(
+      bundleKey({ volunteerId: 'vol-1', pauschale: 'uebungsleiter' }),
+    ).toBe('vol-1::uebungsleiter');
+  });
+
+  it('differs across Pauschalen and volunteers', () => {
+    const ehrenamt = bundleKey({ volunteerId: 'v', pauschale: 'ehrenamt' });
+    const ul = bundleKey({ volunteerId: 'v', pauschale: 'uebungsleiter' });
+    const other = bundleKey({ volunteerId: 'w', pauschale: 'ehrenamt' });
+    expect(new Set([ehrenamt, ul, other]).size).toBe(3);
   });
 });
 

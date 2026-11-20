@@ -290,6 +290,8 @@ query GetInvoice($id: ID!) {
       id
       method
       occurredAt
+      # PENDING/SENDING is not "sent"; FAILED never arrived.
+      status
       deliveredByUser {
         name
       }

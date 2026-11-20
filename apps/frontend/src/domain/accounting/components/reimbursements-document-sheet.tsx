@@ -1,6 +1,5 @@
 'use client';
 
-import { BundleDeliveryMethod } from '@repo/data';
 import {
   useContract,
   useInvoice,
@@ -21,6 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@repo/ui';
+import { parseISO } from 'date-fns';
 import {
   CheckIcon,
   ClockIcon,
@@ -40,6 +40,7 @@ import { useFormatting } from '@/lib/formatting/use-formatting';
 import {
   contractStatusToDocStatus,
   creationTargetFor,
+  deliveryTimelineLabelKey,
   invoiceStatusToDocStatus,
   mapSignatureToSignee,
 } from '../lib/board-data.utils';
@@ -289,7 +290,7 @@ function buildTimeline(
   const entries: TimelineEntry[] = [];
 
   for (const change of detail.statusChanges) {
-    const actor = change.actorUser?.name ?? t('timeline.actorOrg');
+    const actor = change.actorUser?.name ?? t('pipeline.actorOrg');
     const occurredAt = new Date(change.occurredAt);
     switch (change.type) {
       case 'CREATED':
@@ -339,12 +340,9 @@ function buildTimeline(
   for (const delivery of deliveries) {
     entries.push({
       id: delivery.id,
-      label:
-        delivery.method === BundleDeliveryMethod.Email
-          ? t('timelineSent')
-          : t('timelineDownloaded'),
-      actor: delivery.deliveredByUser?.name ?? t('timeline.actorOrg'),
-      date: new Date(delivery.occurredAt),
+      label: t(deliveryTimelineLabelKey(delivery.method, delivery.status)),
+      actor: delivery.deliveredByUser?.name ?? t('pipeline.actorOrg'),
+      date: parseISO(delivery.occurredAt),
     });
   }
 

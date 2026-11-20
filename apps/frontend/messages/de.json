@@ -2314,6 +2314,9 @@
         "recipientLabel": "E-Mail-Adresse der Buchhaltung",
         "recipientHint": "Erhält deine fertigen Unterlagen-Pakete, sobald sie in der Buchhaltung verarbeitet werden können.",
         "recipientPlaceholder": "buchhaltung@example.org",
+        "recipientNotSet": "Nicht festgelegt",
+        "showRecipient": "E-Mail-Adresse anzeigen",
+        "hideRecipient": "E-Mail-Adresse verbergen",
         "subjectLabel": "Betreff der E-Mail",
         "subjectHint": "Klicke auf eine Variable, um sie an der Cursorposition einzufügen.",
         "source": {
@@ -2446,13 +2449,9 @@
       "bundle": {
         "actionLabel": "Paket herunterladen",
         "readyCount": "{count} bereit",
-        "lastDownloaded": "zuletzt heruntergeladen von <name>{by}</name> am {at}",
-        "neverDownloaded": "noch nicht heruntergeladen",
         "unknownUser": "unbekannt",
         "downloadError": "Das Paket ließ sich nicht herunterladen. Versuch es bitte erneut.",
         "sendActionLabel": "Paket senden",
-        "lastSent": "zuletzt gesendet von <name>{by}</name> am {at}",
-        "neverSent": "noch nicht gesendet",
         "noRecipient": "Hinterlege in den Abrechnungseinstellungen eine E-Mail-Adresse der Buchhaltung, um Pakete zu senden.",
         "sendSuccess": "Das Paket ist auf dem Weg zur Buchhaltung",
         "sendError": "Das Paket konnte nicht gesendet werden. Bitte versuche es erneut.",
@@ -2470,8 +2469,6 @@
           },
           "confirm": "Trotzdem senden"
         },
-        "lastSendFailed": "letztes Senden fehlgeschlagen am {at}",
-        "lastSending": "wird gesendet …",
         "downloadInstead": "Stattdessen herunterladen",
         "settingsError": "Versandeinstellungen nicht verfügbar"
       },
@@ -2522,6 +2519,8 @@
           "timelineDeclined": "Abgelehnt",
           "timelineSent": "An die Buchhaltung gesendet",
           "timelineDownloaded": "Heruntergeladen",
+          "timelineSending": "Wird an die Buchhaltung gesendet …",
+          "timelineSendFailed": "Senden fehlgeschlagen",
           "declineReasonTitle": "Ablehnungsgrund",
           "noAction": "Nichts zu tun",
           "pdfView": "PDF anzeigen",
@@ -2733,6 +2732,7 @@
           "docCount": "{count, plural, one {# Dokument} other {# Dokumente}}",
           "needsAttentionLabel": "Erfordert Aufmerksamkeit",
           "issuesGroupLabel": "Mit Problemen — zum Senden bestätigen",
+          "previewFailed": "Das Paket konnte nicht vorbereitet werden. Bitte versuche es erneut.",
           "sendAnyway": "Trotzdem senden",
           "sendCount": "{count, plural, =0 {Senden} one {# Paket senden} other {# Pakete senden}}",
           "cancel": "Abbrechen"

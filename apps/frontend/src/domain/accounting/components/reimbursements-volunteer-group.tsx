@@ -51,6 +51,7 @@ import {
   bundleSendBlock,
   sortDocsForDisplay,
 } from '../lib/mass-actions';
+import { PAUSCHALE_LABEL_KEY } from '../lib/reimbursement-type-mapping';
 import { reportBundleDownloadFailure } from '../lib/report-bundle-download-failure';
 import {
   documentCreationBlockedFor,
@@ -377,10 +378,6 @@ function VolunteerTableGroup({
     readyIdsByType[type] = [...(readyIdsByType[type] ?? []), d.id];
   }
   const readyTypes = Object.keys(readyByType) as PauschalenType[];
-  const TYPE_LABEL: Record<PauschalenType, string> = {
-    ehrenamt: t('toolbar.typeEP'),
-    uebungsleiter: t('toolbar.typeUL'),
-  };
 
   const visibleDocIds = sortedDocs.map((d) => d.id);
   const selectedVolCount = visibleDocIds.filter((id) =>
@@ -464,7 +461,7 @@ function VolunteerTableGroup({
                     reimbursementTypeKey={
                       volunteer.reimbursementTypeKeys?.[type]
                     }
-                    typeLabel={TYPE_LABEL[type]}
+                    typeLabel={t(PAUSCHALE_LABEL_KEY[type])}
                     readyCount={readyByType[type] ?? 0}
                     invoiceIds={readyIdsByType[type] ?? []}
                     orgUId={orgUId}

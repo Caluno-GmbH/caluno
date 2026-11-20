@@ -1,6 +1,10 @@
 'use client';
 
-import { BundleDeliveryMethod } from '@repo/data';
+import {
+  BundleDeliveryMethod,
+  DataError,
+  type ReimbursementTypeKey,
+} from '@repo/data';
 import {
   useAccountingDeliverySettings,
   useBundleSendPreview,
@@ -67,17 +71,23 @@ import {
   triggerBlobDownload,
 } from '../lib/download-bundle';
 import {
+  type BundleGroup,
+  type BundleNeedingAttention,
+  type BundlePreviewOutcome,
   buildBundleSendArgs,
-  bundleSendBlock,
+  bundleKey,
   contractIdsToCountersign,
   firstBlockingDocId,
   groupBundles,
+  mapWithConcurrency,
   resolveSelectedPairs,
+  type SendableBundle,
   selectableDocIds,
-  splitSendableBundles,
+  splitBundlePreviews,
   summarizeSettled,
   timesheetIdsToCountersign,
 } from '../lib/mass-actions';
+import { reportBundleDownloadFailure } from '../lib/report-bundle-download-failure';
 import {
   documentCreationBlockedFor,
   type TemplateReadinessByPauschale,
@@ -93,6 +103,10 @@ import { DocumentSheet } from './reimbursements-document-sheet';
 import { ReimbursementsTable } from './reimbursements-volunteer-group';
 
 type SortOption = 'action-needed' | 'newest';
+
+// Bounded so "select all" cannot fire hundreds of bundle previews (each one
+// builds the bundle's document set server-side) at the API at once.
+const PREVIEW_CONCURRENCY = 4;
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = [
@@ -277,11 +291,16 @@ export function ReimbursementsBoard({
 
   const deliverySettingsQuery = useAccountingDeliverySettings(orgUId);
   const deliverySettings = deliverySettingsQuery.data;
-  const bundleMode: 'send' | 'download' =
-    deliverySettings?.deliveryMethod === BundleDeliveryMethod.Email &&
-    deliverySettings.recipientEmail
+  // `null` while the settings are unknown (loading, or failed to load): the
+  // bundle action must not guess, because a download in an email unit records a
+  // download and marks the invoices paid. The per-row control already refuses
+  // to act in this state; the mass bar used to default to "download".
+  const bundleMode: 'send' | 'download' | null = deliverySettings
+    ? deliverySettings.deliveryMethod === BundleDeliveryMethod.Email &&
+      deliverySettings.recipientEmail
       ? 'send'
-      : 'download';
+      : 'download'
+    : null;
 
   // Filters — one object; dateRange stays owned by the page header and is merged in.
   const [filterSettings, setFilterSettings] = useState<FilterSettings>(
@@ -392,20 +411,11 @@ export function ReimbursementsBoard({
   >(null);
 
   // Bundle batch confirm dialog state
-  type SendableItem = {
-    group: ReturnType<typeof groupBundles>[number];
-    recipientEmail: string;
-    issues: import('@repo/data').BundleDeliveryIssue[];
-    subject: string;
-  };
-  type NeedsAttentionItem = {
-    group: ReturnType<typeof groupBundles>[number];
-    reason: 'no-recipient' | 'too-large';
-  };
+  type SendableItem = SendableBundle;
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [batchSendable, setBatchSendable] = useState<SendableItem[]>([]);
   const [batchNeedsAttention, setBatchNeedsAttention] = useState<
-    NeedsAttentionItem[]
+    BundleNeedingAttention[]
   >([]);
   function deselectIds(ids: string[]) {
     if (ids.length === 0) return;
@@ -502,20 +512,16 @@ export function ReimbursementsBoard({
     if (!guardSelection(pairs)) return;
     const groups = groupBundles(pairs);
     if (groups.length === 0) return;
+    // Unknown delivery method: do nothing rather than guess "download".
+    if (!bundleMode) return;
     setBusyAction('bundles');
 
     try {
       if (bundleMode === 'send') {
-        // Run previews for each group; failures count as needs-attention.
-        type PreviewResult = {
-          group: ReturnType<typeof groupBundles>[number];
-          recipientEmail: string | null;
-          fitsInEmail: boolean;
-          issues: import('@repo/data').BundleDeliveryIssue[];
-          subject: string;
-        };
-        const previewResults: PreviewResult[] = await Promise.all(
-          groups.map(async (group) => {
+        const previewResults = await mapWithConcurrency(
+          groups,
+          PREVIEW_CONCURRENCY,
+          async (group): Promise<BundlePreviewOutcome> => {
             if (!group.reimbursementTypeKey) {
               return {
                 group,
@@ -523,6 +529,7 @@ export function ReimbursementsBoard({
                 fitsInEmail: false,
                 issues: [],
                 subject: '',
+                previewFailed: true,
               };
             }
             try {
@@ -533,34 +540,24 @@ export function ReimbursementsBoard({
               });
               return { group, ...result };
             } catch {
+              // Not "too large": the preview never answered, so the bundle may
+              // be perfectly sendable once the admin retries.
               return {
                 group,
                 recipientEmail: null,
                 fitsInEmail: false,
                 issues: [],
                 subject: '',
+                previewFailed: true,
               };
             }
-          }),
+          },
         );
 
-        const { sendable, needsAttention: rawNeedsAttention } =
-          splitSendableBundles(previewResults);
-
-        const dialogSendable: SendableItem[] = sendable.map((p) => ({
-          group: p.group,
-          recipientEmail: p.recipientEmail as string,
-          issues: p.issues,
-          subject: p.subject,
-        }));
-        const dialogNeedsAttention: NeedsAttentionItem[] =
-          rawNeedsAttention.map((p) => ({
-            group: p.group,
-            reason: bundleSendBlock(p) ?? 'too-large',
-          }));
-
-        setBatchSendable(dialogSendable);
-        setBatchNeedsAttention(dialogNeedsAttention);
+        const { sendable, needsAttention } =
+          splitBundlePreviews(previewResults);
+        setBatchSendable(sendable);
+        setBatchNeedsAttention(needsAttention);
         setBatchDialogOpen(true);
       } else {
         // Download mode — no dialog. Download one bundle at a time: each request
@@ -568,7 +565,11 @@ export function ReimbursementsBoard({
         // but the first of several downloads fired together — which would mark
         // bundles paid without ever handing the file over.
         const downloadable = groups.filter(
-          (g) => g.reimbursementTypeKey !== undefined,
+          (
+            g,
+          ): g is BundleGroup & {
+            reimbursementTypeKey: ReimbursementTypeKey;
+          } => g.reimbursementTypeKey !== undefined,
         );
         const noTypeCount = groups.length - downloadable.length;
         let succeeded = 0;
@@ -577,7 +578,7 @@ export function ReimbursementsBoard({
           try {
             const blob = await requestBundleDownload({
               volunteerId: g.volunteerId,
-              reimbursementTypeKey: g.reimbursementTypeKey as string,
+              reimbursementTypeKey: g.reimbursementTypeKey,
               invoiceIds: g.invoiceIds,
               orgUId,
             });
@@ -587,9 +588,14 @@ export function ReimbursementsBoard({
             );
             succeeded++;
             succeededInvoiceIds.push(...g.invoiceIds);
-          } catch {
+          } catch (error) {
             // Rolled into the needs-attention total below; a failed download
-            // leaves its rows selected so the admin can retry them.
+            // leaves its rows selected so the admin can retry them. Report the
+            // reason — the admin only sees the aggregate count.
+            void reportBundleDownloadFailure(error, {
+              volunteerId: g.volunteerId,
+              reimbursementTypeKey: g.reimbursementTypeKey,
+            });
           }
         }
         const failed = downloadable.length - succeeded;
@@ -615,9 +621,7 @@ export function ReimbursementsBoard({
 
   async function handleBatchConfirm(keysToSend: string[]) {
     const keySet = new Set(keysToSend);
-    const toSend = batchSendable.filter((p) =>
-      keySet.has(`${p.group.volunteerId}::${p.group.pauschale}`),
-    );
+    const toSend = batchSendable.filter((p) => keySet.has(bundleKey(p.group)));
     if (toSend.length === 0) {
       setBatchDialogOpen(false);
       return;
@@ -646,6 +650,15 @@ export function ReimbursementsBoard({
         }),
       );
       const { succeeded, failed } = summarizeSettled(results);
+      // The single-row flow already maps CONFLICT to "review and confirm again";
+      // in a batch that is the common retry case (recipient/subject/issues
+      // changed between preview and send), so surface it instead of a bare count.
+      const issuesChanged = results.filter(
+        (result): result is PromiseRejectedResult =>
+          result.status === 'rejected' &&
+          result.reason instanceof DataError &&
+          result.reason.options?.code === 'CONFLICT',
+      ).length;
       // Drop the groups that sent; a failed send keeps its rows selected to retry.
       deselectIds(
         toSend
@@ -654,12 +667,16 @@ export function ReimbursementsBoard({
       );
       const totalNeedsAttention = failed + needsAttentionCount;
       if (totalNeedsAttention > 0) {
-        toast.warning(
+        const summary =
           t('massActions.bundlesSentDone', { count: succeeded }) +
-            ' · ' +
-            t('massActions.bundlesNeedAttention', {
-              count: totalNeedsAttention,
-            }),
+          ' · ' +
+          t('massActions.bundlesNeedAttention', {
+            count: totalNeedsAttention,
+          });
+        toast.warning(
+          issuesChanged > 0
+            ? `${summary} · ${t('bundle.sendIssuesChanged')}`
+            : summary,
         );
       } else {
         toast.success(t('massActions.bundlesSentDone', { count: succeeded }));

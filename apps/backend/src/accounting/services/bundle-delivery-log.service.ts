@@ -143,6 +143,16 @@ export class BundleDeliveryLogService {
     return latest;
   }
 
+  /**
+   * Deliveries for a batch of invoice ids, newest first per invoice.
+   *
+   * Deliberately not filtered by `organizationUnitId`: the ids come from
+   * invoices that were themselves loaded through tenant-scoped queries, while a
+   * delivery's unit is the header unit that performed the action. An admin
+   * acting from a parent unit records the parent, so filtering by either the
+   * invoice's unit or the current header unit would hide legitimate history
+   * from one of the two views. Same rule as `findLatestEmailDeliveries`.
+   */
   async findDeliveriesByInvoiceId(
     invoiceIds: readonly string[],
   ): Promise<Map<string, InvoiceDeliveryRecord[]>> {
