@@ -1,4 +1,4 @@
-import type { ReimbursementTypeKey } from '@repo/data';
+import type { BundleDeliveryIssue, ReimbursementTypeKey } from '@repo/data';
 import { visibleDocumentsForVolunteer } from './board-filters';
 import type {
   BoardDocument,
@@ -168,6 +168,23 @@ export function summarizeSettled<T>(results: PromiseSettledResult<T>[]): {
 
 // ─── Send bundle routing ──────────────────────────────────────────────────────
 
+/** Why a previewed bundle cannot be emailed as-is, or `null` when it is sendable. */
+export type BundleSendBlock = 'too-large' | 'no-recipient';
+
+/**
+ * The single rule that decides whether a previewed bundle can be sent by email.
+ * Both the single-row send (volunteer group) and the mass send (board dialog)
+ * route on this, so the "too large / no recipient" decision lives in one place.
+ */
+export function bundleSendBlock(preview: {
+  recipientEmail: string | null;
+  fitsInEmail: boolean;
+}): BundleSendBlock | null {
+  if (!preview.fitsInEmail) return 'too-large';
+  if (!preview.recipientEmail) return 'no-recipient';
+  return null;
+}
+
 /**
  * Splits bundle-send previews into `sendable` (has recipient + fits in email)
  * and `needsAttention` (missing recipient or too large). Extra fields on each
@@ -179,8 +196,31 @@ export function splitSendableBundles<
   const sendable: T[] = [];
   const needsAttention: T[] = [];
   for (const p of previews) {
-    if (!p.recipientEmail || !p.fitsInEmail) needsAttention.push(p);
+    if (bundleSendBlock(p)) needsAttention.push(p);
     else sendable.push(p);
   }
   return { sendable, needsAttention };
+}
+
+/** The canonical argument shape for the send-bundle mutation, shared by both send paths. */
+export function buildBundleSendArgs(
+  input: {
+    volunteerId: string;
+    reimbursementTypeKey: ReimbursementTypeKey;
+    invoiceIds: string[];
+  },
+  shown: {
+    issues: BundleDeliveryIssue[];
+    recipientEmail: string;
+    subject: string;
+  },
+) {
+  return {
+    volunteerId: input.volunteerId,
+    reimbursementTypeKey: input.reimbursementTypeKey,
+    invoiceIds: input.invoiceIds,
+    acknowledgedIssues: shown.issues,
+    expectedRecipientEmail: shown.recipientEmail,
+    expectedSubject: shown.subject,
+  };
 }

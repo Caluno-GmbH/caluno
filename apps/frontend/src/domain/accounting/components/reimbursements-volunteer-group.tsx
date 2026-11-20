@@ -48,7 +48,11 @@ import {
   requestBundleDownload,
   triggerBlobDownload,
 } from '../lib/download-bundle';
-import { sortDocsForDisplay } from '../lib/mass-actions';
+import {
+  buildBundleSendArgs,
+  bundleSendBlock,
+  sortDocsForDisplay,
+} from '../lib/mass-actions';
 import { reportBundleDownloadFailure } from '../lib/report-bundle-download-failure';
 import {
   documentCreationBlockedFor,
@@ -206,14 +210,12 @@ function BundleSendButton(props: BundleButtonProps) {
   const sendBundle = async (shown: ShownBundle) => {
     if (!reimbursementTypeKey) return;
     try {
-      await send.mutateAsync({
-        volunteerId,
-        reimbursementTypeKey,
-        invoiceIds,
-        acknowledgedIssues: shown.issues,
-        expectedRecipientEmail: shown.recipientEmail,
-        expectedSubject: shown.subject,
-      });
+      await send.mutateAsync(
+        buildBundleSendArgs(
+          { volunteerId, reimbursementTypeKey, invoiceIds },
+          shown,
+        ),
+      );
       toast.success(t('bundle.sendSuccess'));
     } catch (error) {
       handleSendError(error);
@@ -230,7 +232,7 @@ function BundleSendButton(props: BundleButtonProps) {
         reimbursementTypeKey,
         invoiceIds,
       });
-      if (!result.fitsInEmail) return offerDownload();
+      if (bundleSendBlock(result) === 'too-large') return offerDownload();
       if (!result.recipientEmail) {
         toast.error(t('bundle.noRecipient'));
         return;

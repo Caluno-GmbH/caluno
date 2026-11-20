@@ -67,6 +67,8 @@ import {
   triggerBlobDownload,
 } from '../lib/download-bundle';
 import {
+  buildBundleSendArgs,
+  bundleSendBlock,
   contractIdsToCountersign,
   firstBlockingDocId,
   groupBundles,
@@ -405,96 +407,89 @@ export function ReimbursementsBoard({
   const [batchNeedsAttention, setBatchNeedsAttention] = useState<
     NeedsAttentionItem[]
   >([]);
+  function deselectIds(ids: string[]) {
+    if (ids.length === 0) return;
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => {
+        next.delete(id);
+      });
+      return next;
+    });
+  }
+
+  // Drop the ids whose mutation fulfilled from the selection, keeping failed
+  // ones selected so a retry acts on exactly what's left. `ids` and `results`
+  // are index-aligned (same array that was mapped into Promise.allSettled).
+  function deselectSucceeded(
+    ids: string[],
+    results: PromiseSettledResult<unknown>[],
+  ) {
+    deselectIds(ids.filter((_, i) => results[i]?.status === 'fulfilled'));
+  }
+
   // ─── Mass countersign handlers ───────────────────────────────────────────────
-  async function handleMassCountersignContracts() {
+  // Contract and timesheet countersigning share one flow; only the row selector,
+  // the mutation, and the toast copy differ.
+  async function runMassCountersign(opts: {
+    action: 'contracts' | 'timesheets';
+    selectIds: (pairs: DocVolPair[]) => string[];
+    mutate: (id: string) => Promise<unknown>;
+    onDone: (count: number) => void;
+    onPartial: (done: number, total: number, failed: number) => void;
+  }) {
     const pairs = resolveSelectedPairs(
       sortedFilteredVolunteers,
       effectiveFilterSettings,
       selectedIds,
     );
     if (!guardSelection(pairs)) return;
-    const ids = contractIdsToCountersign(pairs);
+    const ids = opts.selectIds(pairs);
     if (ids.length === 0) return;
-    setBusyAction('contracts');
+    setBusyAction(opts.action);
     try {
       const results = await Promise.allSettled(
-        ids.map((id) => signContract.mutateAsync(id)),
+        ids.map((id) => opts.mutate(id)),
       );
       const { succeeded, failed } = summarizeSettled(results);
-      if (failed === 0) {
-        toast.success(
-          t('massActions.countersignContractsDone', { count: succeeded }),
-        );
-      } else {
-        toast.warning(
-          t('massActions.countersignContractsPartial', {
-            done: succeeded,
-            total: ids.length,
-            failed,
-          }),
-        );
-      }
-      // Remove successfully acted ids from selection.
-      const succeededIds = new Set(
-        results
-          .map((r, i) => (r.status === 'fulfilled' ? ids[i] : null))
-          .filter((id): id is string => id !== null),
-      );
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        succeededIds.forEach((id) => {
-          next.delete(id);
-        });
-        return next;
-      });
+      if (failed === 0) opts.onDone(succeeded);
+      else opts.onPartial(succeeded, ids.length, failed);
+      deselectSucceeded(ids, results);
     } finally {
       setBusyAction(null);
     }
   }
 
-  async function handleMassCountersignTimesheets() {
-    const pairs = resolveSelectedPairs(
-      sortedFilteredVolunteers,
-      effectiveFilterSettings,
-      selectedIds,
-    );
-    if (!guardSelection(pairs)) return;
-    const ids = timesheetIdsToCountersign(pairs);
-    if (ids.length === 0) return;
-    setBusyAction('timesheets');
-    try {
-      const results = await Promise.allSettled(
-        ids.map((id) => signInvoice.mutateAsync(id)),
-      );
-      const { succeeded, failed } = summarizeSettled(results);
-      if (failed === 0) {
-        toast.success(
-          t('massActions.countersignTimesheetsDone', { count: succeeded }),
-        );
-      } else {
+  function handleMassCountersignContracts() {
+    return runMassCountersign({
+      action: 'contracts',
+      selectIds: contractIdsToCountersign,
+      mutate: (id) => signContract.mutateAsync(id),
+      onDone: (count) =>
+        toast.success(t('massActions.countersignContractsDone', { count })),
+      onPartial: (done, total, failed) =>
+        toast.warning(
+          t('massActions.countersignContractsPartial', { done, total, failed }),
+        ),
+    });
+  }
+
+  function handleMassCountersignTimesheets() {
+    return runMassCountersign({
+      action: 'timesheets',
+      selectIds: timesheetIdsToCountersign,
+      mutate: (id) => signInvoice.mutateAsync(id),
+      onDone: (count) =>
+        toast.success(t('massActions.countersignTimesheetsDone', { count })),
+      onPartial: (done, total, failed) =>
         toast.warning(
           t('massActions.countersignTimesheetsPartial', {
-            done: succeeded,
-            total: ids.length,
+            done,
+            total,
             failed,
           }),
-        );
-      }
-      const succeededIds = new Set(
-        results
-          .map((r, i) => (r.status === 'fulfilled' ? ids[i] : null))
-          .filter((id): id is string => id !== null),
-      );
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        succeededIds.forEach((id) => {
-          next.delete(id);
-        });
-        return next;
-      });
-    } finally {
-      setBusyAction(null);
-    }
+        ),
+    });
   }
 
   // ─── Mass bundle handler ─────────────────────────────────────────────────────
@@ -561,36 +556,45 @@ export function ReimbursementsBoard({
         const dialogNeedsAttention: NeedsAttentionItem[] =
           rawNeedsAttention.map((p) => ({
             group: p.group,
-            reason: !p.recipientEmail ? 'no-recipient' : 'too-large',
+            reason: bundleSendBlock(p) ?? 'too-large',
           }));
 
         setBatchSendable(dialogSendable);
         setBatchNeedsAttention(dialogNeedsAttention);
         setBatchDialogOpen(true);
       } else {
-        // Download mode — no dialog.
-        const results = await Promise.allSettled(
-          groups
-            .filter((g) => g.reimbursementTypeKey !== undefined)
-            .map((g) =>
-              requestBundleDownload({
-                volunteerId: g.volunteerId,
-                reimbursementTypeKey: g.reimbursementTypeKey as string,
-                invoiceIds: g.invoiceIds,
-                orgUId,
-              }).then((blob) =>
-                triggerBlobDownload(
-                  blob,
-                  `Abrechnung-${g.volunteerId.slice(0, 8)}.zip`,
-                ),
-              ),
-            ),
+        // Download mode — no dialog. Download one bundle at a time: each request
+        // marks its invoices paid server-side, and browsers silently drop all
+        // but the first of several downloads fired together — which would mark
+        // bundles paid without ever handing the file over.
+        const downloadable = groups.filter(
+          (g) => g.reimbursementTypeKey !== undefined,
         );
-        const noTypeCount = groups.filter(
-          (g) => g.reimbursementTypeKey === undefined,
-        ).length;
-        const { succeeded, failed } = summarizeSettled(results);
+        const noTypeCount = groups.length - downloadable.length;
+        let succeeded = 0;
+        const succeededInvoiceIds: string[] = [];
+        for (const g of downloadable) {
+          try {
+            const blob = await requestBundleDownload({
+              volunteerId: g.volunteerId,
+              reimbursementTypeKey: g.reimbursementTypeKey as string,
+              invoiceIds: g.invoiceIds,
+              orgUId,
+            });
+            triggerBlobDownload(
+              blob,
+              `Abrechnung-${g.volunteerId.slice(0, 8)}.zip`,
+            );
+            succeeded++;
+            succeededInvoiceIds.push(...g.invoiceIds);
+          } catch {
+            // Rolled into the needs-attention total below; a failed download
+            // leaves its rows selected so the admin can retry them.
+          }
+        }
+        const failed = downloadable.length - succeeded;
         queryClient.invalidateQueries({ queryKey: ['accounting'] });
+        deselectIds(succeededInvoiceIds);
         const totalFailed = failed + noTypeCount;
         if (totalFailed > 0) {
           toast.warning(
@@ -625,17 +629,29 @@ export function ReimbursementsBoard({
         toSend.map((p) => {
           if (!p.group.reimbursementTypeKey)
             return Promise.reject(new Error('no-type'));
-          return send.mutateAsync({
-            volunteerId: p.group.volunteerId,
-            reimbursementTypeKey: p.group.reimbursementTypeKey,
-            invoiceIds: p.group.invoiceIds,
-            acknowledgedIssues: p.issues,
-            expectedRecipientEmail: p.recipientEmail,
-            expectedSubject: p.subject,
-          });
+          return send.mutateAsync(
+            buildBundleSendArgs(
+              {
+                volunteerId: p.group.volunteerId,
+                reimbursementTypeKey: p.group.reimbursementTypeKey,
+                invoiceIds: p.group.invoiceIds,
+              },
+              {
+                issues: p.issues,
+                recipientEmail: p.recipientEmail,
+                subject: p.subject,
+              },
+            ),
+          );
         }),
       );
       const { succeeded, failed } = summarizeSettled(results);
+      // Drop the groups that sent; a failed send keeps its rows selected to retry.
+      deselectIds(
+        toSend
+          .filter((_, i) => results[i]?.status === 'fulfilled')
+          .flatMap((p) => p.group.invoiceIds),
+      );
       const totalNeedsAttention = failed + needsAttentionCount;
       if (totalNeedsAttention > 0) {
         toast.warning(
@@ -831,6 +847,21 @@ export function ReimbursementsBoard({
     () => selectableDocIds(sortedFilteredVolunteers, effectiveFilterSettings),
     [sortedFilteredVolunteers, effectiveFilterSettings],
   );
+
+  // Keep the selection to rows that are still selectable. A background refetch
+  // can change a selected doc's status or drop it entirely; without this the
+  // raw `selectedIds.size` (and the count/indeterminate state derived from it)
+  // would keep counting rows the admin can no longer act on.
+  useEffect(() => {
+    const selectable = new Set(allSelectableIds);
+    setSelectedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const next = new Set<string>();
+      for (const id of prev) if (selectable.has(id)) next.add(id);
+      return next.size === prev.size ? prev : next;
+    });
+  }, [allSelectableIds]);
+
   const allSelected =
     allSelectableIds.length > 0 &&
     allSelectableIds.every((id) => selectedIds.has(id));

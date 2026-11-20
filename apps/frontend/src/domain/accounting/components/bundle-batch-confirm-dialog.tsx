@@ -153,7 +153,7 @@ export function BundleBatchConfirmDialog({
                       </span>
                     </div>
                     <ul className="space-y-1.5 rounded-md bg-alert/10 p-2.5">
-                      {issues.map((issue) => (
+                      {[...new Set(issues)].map((issue) => (
                         <li
                           key={issue}
                           className="flex items-start gap-2 text-sm text-foreground"

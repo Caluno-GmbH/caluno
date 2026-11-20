@@ -2,6 +2,8 @@ import { describe, expect, it } from 'bun:test';
 import { ReimbursementTypeKey } from '@repo/data';
 import type { BoardDocument, BoardVolunteer, DocVolPair } from './board-types';
 import {
+  buildBundleSendArgs,
+  bundleSendBlock,
   contractIdsToCountersign,
   firstBlockingDocId,
   groupBundles,
@@ -313,6 +315,55 @@ describe('splitSendableBundles', () => {
     const { sendable, needsAttention } = splitSendableBundles(previews);
     expect(sendable[0]?.issues).toEqual(['warn-1']);
     expect(needsAttention[0]?.issues).toEqual([]);
+  });
+});
+
+// ─── bundleSendBlock ──────────────────────────────────────────────────────────
+
+describe('bundleSendBlock', () => {
+  it('returns null when the bundle fits and has a recipient', () => {
+    expect(
+      bundleSendBlock({ recipientEmail: 'a@example.com', fitsInEmail: true }),
+    ).toBeNull();
+  });
+
+  it('reports too-large before no-recipient when both apply', () => {
+    expect(bundleSendBlock({ recipientEmail: null, fitsInEmail: false })).toBe(
+      'too-large',
+    );
+  });
+
+  it('reports no-recipient when it fits but has no recipient', () => {
+    expect(bundleSendBlock({ recipientEmail: null, fitsInEmail: true })).toBe(
+      'no-recipient',
+    );
+  });
+});
+
+// ─── buildBundleSendArgs ──────────────────────────────────────────────────────
+
+describe('buildBundleSendArgs', () => {
+  it('maps input + shown preview into the send mutation shape', () => {
+    const args = buildBundleSendArgs(
+      {
+        volunteerId: 'vol-1',
+        reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
+        invoiceIds: ['inv-1', 'inv-2'],
+      },
+      {
+        issues: [],
+        recipientEmail: 'accounting@example.org',
+        subject: 'Abrechnung',
+      },
+    );
+    expect(args).toEqual({
+      volunteerId: 'vol-1',
+      reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
+      invoiceIds: ['inv-1', 'inv-2'],
+      acknowledgedIssues: [],
+      expectedRecipientEmail: 'accounting@example.org',
+      expectedSubject: 'Abrechnung',
+    });
   });
 });
 
