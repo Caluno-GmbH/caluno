@@ -24,7 +24,7 @@ A page load replays that page's SSR calls (`get-session`, terms status, then the
 | Profile  | Shape                                                                                               | Question it answers                         |
 | -------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | `smoke`  | 1 iteration per journey                                                                             | Do the scripts, seed and sessions work?     |
-| `load`   | Ramp to `TARGET_USERS` (200) over 5 min, hold 20 min                                                | Do we meet the budget at the expected peak? |
+| `load`   | Ramp to `TARGET_USERS` (200) over 5 min, hold `LOAD_HOLD` (20 min locally, 10 min in CI)            | Do we meet the budget at the expected peak? |
 | `stress` | 50 → 100 → 200 → … → `STRESS_MAX_USERS` (1600), 5 min per step; stops at the first sustained breach | Where does it break?                        |
 | `spike`  | Background at 25% of `TARGET_USERS`, plus `SPIKE_USERS` (300) call-out joins within 30 s            | Does an email wave hurt everyone else?      |
 | `soak`   | `TARGET_USERS` for `SOAK_DURATION` (2h)                                                             | Leaks, pool exhaustion, slow degradation    |
@@ -36,7 +36,7 @@ Pass criteria (any breach fails the run): `http_req_failed` < 1%, p95 under 500 
 ```bash
 brew install k6                         # or use Docker, see below
 bun run db:up && bun run db:migrate && bun run db:seed
-bun run --cwd packages/load-test seed   # LOAD_TEST_ORGS / LOAD_TEST_VOLUNTEERS_PER_UNIT to resize
+APP_ENV=load-test bun run --cwd packages/load-test seed   # LOAD_TEST_ORGS / LOAD_TEST_VOLUNTEERS_PER_UNIT to resize
 bun run --cwd packages/load-test data   # reads BETTER_AUTH_SECRET from apps/backend/.env
 bun run --cwd apps/backend start        # in another terminal
 bun run --cwd packages/load-test smoke
@@ -63,9 +63,9 @@ When a `release → production` pull request is opened or updated, `.github/work
 1. Deploys the pull request's merge commit to `load-test`, with the minimum container count raised to production's (1). On boot the backend publishes terms and seeds the dataset (`docker-entrypoint.sh`, load-test only).
 2. Reads `caluno-load-test-better-auth-secret` from Scaleway Secret Manager and runs `bun run data` to derive the cookies.
 3. Runs the `load` profile at 200 users with a 10 min hold (about 17 min), with `WEB_URL` set so SSR pages are rendered too. The HTML report is uploaded as the `k6-report-load-test-*` artifact and the result is posted to Slack.
-4. Applies the idle minimum (0) again.
+4. Applies the idle minimum (0) again, keeping the image tag recorded in the Terraform state. This also runs when the deploy fails, and a nightly run (03:00 UTC) does the same in case a cancelled run never got there. **Load test passed** fails if scaling down fails, so a stuck environment doesn't go unnoticed.
 
-**Load test passed** is the required check on `production`, so a release that breaches a threshold can't be merged until someone has looked at the report. Pushes to `release` while a run is in progress queue up; only the latest one runs afterwards. Pull requests into `production` from any branch other than `release` (hotfixes) skip it.
+**Load test passed** is the required check on `production`, so a release that breaches a threshold can't be merged until someone has looked at the report. Pushes to `release` while a run is in progress queue up; only the latest one runs afterwards. Manual and nightly runs share that queue, because they apply to the same Terraform state. If one of them replaces a queued pull request run, re-run the pull request's check. Pull requests into `production` from any branch other than `release` (hotfixes) skip it.
 
 Expect about 40 minutes from push to result: image builds, the apply, the ramp and the hold.
 
@@ -73,10 +73,10 @@ GitHub-hosted runners aren't in `fr-par`. Their round trip is included in every 
 
 ## Other runs
 
-Never run against production: it serves real users, and the seed refuses to run when `APP_ENV=production`.
+Never run against production: it serves real users. The seed only runs with `APP_ENV=load-test`, so pointing it at any other database takes a deliberate step.
 
-- **Stress, spike and soak:** run **CD · Load test** manually (Actions → Run workflow) on the `release` branch and pick the profile. Nobody else uses `load-test`, so any time works.
-- **Other environments** don't seed on boot. Run `bun run seed` with their `DB_*` variables and `BETTER_AUTH_SECRET` (through a tunnel, since the database is private). Joins send emails, so only target environments whose SMTP points at Mailpit.
+- **Stress, spike and soak:** run **CD · Load test** manually (Actions → Run workflow) on the `release` branch and pick the profile. Nobody else uses `load-test`, so any time works. Manual runs report as **Load test (profile, manual)**, so they never satisfy the required check.
+- **Other environments** aren't supported: the seed plants accounts there for good, and staging and release run e2e on the same data.
 - **Watch while it runs:** container instance count and CPU, Postgres CPU and connections (each backend instance opens up to `DB_POOL_MAX`=25), and backend logs.
 
 Seeded sessions last 30 days and are extended every time the seed runs. Each run also re-anchors the call-out and check-in shifts to tomorrow and today.
@@ -102,7 +102,7 @@ Seeded sessions last 30 days and are extended every time the seed runs. Each run
 
 ## Known limits
 
-- Anyone holding load-test's `BETTER_AUTH_SECRET` can derive the load-test accounts' sessions. They only exist in the load-test environment, and the seed never runs in production.
+- Anyone holding load-test's `BETTER_AUTH_SECRET` can derive the load-test accounts' sessions. They only exist where the seed ran, which takes `APP_ENV=load-test`. Their password is random unless `LOAD_TEST_PASSWORD` is set.
 - Coordinator journeys are read-only. Roster edits and approvals would reshape the dataset between runs.
 - k6 sends every request from one IP. Better Auth's in-memory rate limiter is per IP and per backend instance, so a `rate_limited` count above zero is a finding, not noise (see "Rate limiting behind the proxy" below).
 

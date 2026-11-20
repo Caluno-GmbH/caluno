@@ -35,6 +35,10 @@ on:
         type: string
         required: false
         default: 10m
+    secrets:
+      SCW_SECRET_KEY:
+        description: Reads the environment's Better Auth secret from Scaleway Secret Manager.
+        required: true
 
 permissions:
   contents: read
@@ -45,13 +49,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.profile == 'soak' && 180 || 60 }}
     steps:
+      # No submodules: this job runs the pull request's code, so it gets no
+      # repository token and only the one secret it needs.
       - uses: actions/checkout@v5
         with:
-          submodules: recursive
           persist-credentials: false
-          token: ${{ secrets.ORG_REPO_PAT }}
       - uses: ./.github/actions/setup
       - uses: grafana/setup-k6-action@v1
+        with:
+          k6-version: 2.4.0
 
       - name: Read the environment's Better Auth secret
         id: auth-secret
