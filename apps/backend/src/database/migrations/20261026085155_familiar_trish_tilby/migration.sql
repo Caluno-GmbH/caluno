@@ -1,1 +1,0 @@
-ALTER TABLE "form_block_fields" RENAME COLUMN "system_key" TO "profile_key";
