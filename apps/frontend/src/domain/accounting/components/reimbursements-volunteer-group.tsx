@@ -8,13 +8,13 @@ import {
 } from '@repo/data';
 import {
   useAccountingDeliverySettings,
-  useBundleDownloadStatus,
   useBundleSendPreview,
   useQueryClient,
   useSendReimbursementBundle,
 } from '@repo/data/react';
 import {
   Button,
+  Checkbox,
   cn,
   Table,
   TableBody,
@@ -27,7 +27,6 @@ import { ChevronDownIcon, FileTextIcon, SendIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useState } from 'react';
 import { toast } from 'sonner';
-import { API_URL } from '@/lib/constants';
 import { formatEuro } from '@/lib/formatting/formats';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { documentRowAction } from '../lib/board-data.utils';
@@ -39,12 +38,20 @@ import { STATUS_META } from '../lib/board-status';
 import type {
   BoardDocument,
   BoardVolunteer,
-  DocStatus,
   DocVolPair,
   FilterSettings,
   PauschalenLimit,
-  SendState,
 } from '../lib/board-types';
+import {
+  requestBundleDownload,
+  triggerBlobDownload,
+} from '../lib/download-bundle';
+import {
+  buildBundleSendArgs,
+  bundleSendBlock,
+  sortDocsForDisplay,
+} from '../lib/mass-actions';
+import { PAUSCHALE_LABEL_KEY } from '../lib/reimbursement-type-mapping';
 import { reportBundleDownloadFailure } from '../lib/report-bundle-download-failure';
 import {
   documentCreationBlockedFor,
@@ -66,23 +73,6 @@ function abbreviateName(name: string): string {
   return `${first?.[0] ?? ''}. ${rest.join(' ')}`;
 }
 
-const STATUS_SORT_ORDER: DocStatus[] = [
-  'contract-generate',
-  'contract-draft',
-  'contract-expired',
-  'timesheet-generate',
-  'contract-missing',
-  'contract-signing-coord',
-  'timesheet-signing-coord',
-  'timesheet-ready',
-  'contract-signing-vol',
-  'timesheet-signing-vol',
-  'contract-active',
-  'timesheet-muted',
-  'contract-declined',
-  'timesheet-declined',
-];
-
 // ─── Bundle actions ───────────────────────────────────────────────────────────
 
 interface ShownBundle {
@@ -94,13 +84,13 @@ interface ShownBundle {
 interface BundleButtonProps {
   volunteerId: string;
   reimbursementTypeKey: ReimbursementTypeKey | undefined;
+  /** Allowance-type name shown under the button to tell stacked bundles apart. */
   typeLabel: string;
   readyCount: number;
   /** The timesheets on screen, so the bundle holds exactly those. */
   invoiceIds: string[];
   orgUId: string;
   volunteerName: string;
-  lastSent?: { at: Date; by?: string; state?: SendState };
 }
 
 function useBundleDownload({
@@ -123,34 +113,15 @@ function useBundleDownload({
 
   const download = async () => {
     if (!reimbursementTypeKey || isDownloading) return;
-    const url =
-      `${API_URL}/accounting/reimbursement-bundle/download` +
-      `?volunteerId=${encodeURIComponent(volunteerId)}` +
-      `&reimbursementTypeKey=${encodeURIComponent(reimbursementTypeKey)}` +
-      `&invoiceIds=${encodeURIComponent(invoiceIds.join(','))}`;
     setIsDownloading(true);
     try {
-      const response = await fetch(url, {
-        credentials: 'include',
-        headers: { 'x-organization-unit-id': orgUId },
+      const blob = await requestBundleDownload({
+        volunteerId,
+        reimbursementTypeKey,
+        invoiceIds,
+        orgUId,
       });
-      if (!response.ok) {
-        toast.error(t('bundle.downloadError'));
-        void reportBundleDownloadFailure(response, {
-          volunteerId,
-          reimbursementTypeKey,
-        });
-        return;
-      }
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = objectUrl;
-      anchor.download = `Abrechnung-${volunteerId.slice(0, 8)}.zip`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(objectUrl);
+      triggerBlobDownload(blob, `Abrechnung-${volunteerId.slice(0, 8)}.zip`);
       // The bundle download records the audit row and marks the READY
       // invoices as paid, so refresh the board + "last downloaded" hint.
       queryClient.invalidateQueries({ queryKey: ['accounting'] });
@@ -183,7 +154,7 @@ function BundleActionButton(props: BundleButtonProps) {
         <Button size="sm" variant="outline" className="shrink-0" disabled>
           {settingsQuery.isError
             ? t('bundle.settingsError')
-            : `${t('bundle.actionLabel')} · ${props.readyCount}`}
+            : `${t('bundle.actionLabel')} · ${props.typeLabel} · ${props.readyCount}`}
         </Button>
       </div>
     );
@@ -207,10 +178,8 @@ function BundleSendButton(props: BundleButtonProps) {
     readyCount,
     invoiceIds,
     volunteerName,
-    lastSent,
   } = props;
   const t = useTranslations('Accounting.reimbursements');
-  const { formatDate } = useFormatting();
   const preview = useBundleSendPreview();
   const send = useSendReimbursementBundle();
   const { download, isDownloading } = useBundleDownload(props);
@@ -238,14 +207,12 @@ function BundleSendButton(props: BundleButtonProps) {
   const sendBundle = async (shown: ShownBundle) => {
     if (!reimbursementTypeKey) return;
     try {
-      await send.mutateAsync({
-        volunteerId,
-        reimbursementTypeKey,
-        invoiceIds,
-        acknowledgedIssues: shown.issues,
-        expectedRecipientEmail: shown.recipientEmail,
-        expectedSubject: shown.subject,
-      });
+      await send.mutateAsync(
+        buildBundleSendArgs(
+          { volunteerId, reimbursementTypeKey, invoiceIds },
+          shown,
+        ),
+      );
       toast.success(t('bundle.sendSuccess'));
     } catch (error) {
       handleSendError(error);
@@ -262,7 +229,7 @@ function BundleSendButton(props: BundleButtonProps) {
         reimbursementTypeKey,
         invoiceIds,
       });
-      if (!result.fitsInEmail) return offerDownload();
+      if (bundleSendBlock(result) === 'too-large') return offerDownload();
       if (!result.recipientEmail) {
         toast.error(t('bundle.noRecipient'));
         return;
@@ -282,18 +249,6 @@ function BundleSendButton(props: BundleButtonProps) {
     }
   };
 
-  const lastSentLine = () => {
-    if (!lastSent) return t('bundle.neverSent');
-    const at = formatDate(lastSent.at);
-    if (lastSent.state === 'failed') return t('bundle.lastSendFailed', { at });
-    if (lastSent.state === 'pending') return t('bundle.lastSending');
-    return t.rich('bundle.lastSent', {
-      by: lastSent.by ? abbreviateName(lastSent.by) : t('bundle.unknownUser'),
-      at,
-      name: profileName,
-    });
-  };
-
   return (
     <div className="flex flex-col items-end gap-1 max-w-[220px]">
       <Button
@@ -307,17 +262,8 @@ function BundleSendButton(props: BundleButtonProps) {
         }}
       >
         <SendIcon size={13} />
-        {t('bundle.sendActionLabel')} · {readyCount}
+        {t('bundle.sendActionLabel')} · {typeLabel} · {readyCount}
       </Button>
-      <span
-        className={cn(
-          'text-xs text-right leading-snug',
-          lastSent?.state === 'failed' ? 'text-alert' : 'text-muted-foreground',
-        )}
-      >
-        <span className="font-medium text-card-foreground">{typeLabel}</span> ·{' '}
-        {lastSentLine()}
-      </span>
       {/* The dialog portals out, but React events still bubble to the row. */}
       {/* biome-ignore lint/a11y/noStaticElementInteractions: stops row toggling only */}
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops row toggling only */}
@@ -353,13 +299,8 @@ function profileName(chunks: ReactNode) {
 }
 
 function BundleDownloadButton(props: BundleButtonProps) {
-  const { volunteerId, reimbursementTypeKey, typeLabel, readyCount } = props;
+  const { reimbursementTypeKey, readyCount, typeLabel } = props;
   const t = useTranslations('Accounting.reimbursements');
-  const { formatDate } = useFormatting();
-  const { data: status, isLoading } = useBundleDownloadStatus(
-    volunteerId,
-    reimbursementTypeKey,
-  );
   const { download, isDownloading } = useBundleDownload(props);
 
   return (
@@ -375,22 +316,8 @@ function BundleDownloadButton(props: BundleButtonProps) {
         }}
       >
         <FileTextIcon size={13} />
-        {t('bundle.actionLabel')} · {readyCount}
+        {t('bundle.actionLabel')} · {typeLabel} · {readyCount}
       </Button>
-      <span className="text-xs text-muted-foreground text-right leading-snug">
-        <span className="font-medium text-card-foreground">{typeLabel}</span> ·{' '}
-        {isLoading
-          ? null
-          : status
-            ? t.rich('bundle.lastDownloaded', {
-                by: status.downloadedByUser?.name
-                  ? abbreviateName(status.downloadedByUser.name)
-                  : t('bundle.unknownUser'),
-                at: formatDate(new Date(status.downloadedAt)),
-                name: profileName,
-              })
-            : t('bundle.neverDownloaded')}
-      </span>
     </div>
   );
 }
@@ -405,6 +332,11 @@ interface VolunteerTableGroupProps {
   filterSettings: FilterSettings;
   canCreateDocuments: boolean;
   templateReadiness: TemplateReadinessByPauschale;
+  selectedIds: ReadonlySet<string>;
+  onToggleDoc: (id: string) => void;
+  onToggleVolunteer: (vol: BoardVolunteer, select: boolean) => void;
+  highlightedDocId: string | null;
+  registerRowRef: (id: string, el: HTMLElement | null) => void;
 }
 
 function VolunteerTableGroup({
@@ -415,6 +347,11 @@ function VolunteerTableGroup({
   filterSettings,
   canCreateDocuments,
   templateReadiness,
+  selectedIds,
+  onToggleDoc,
+  onToggleVolunteer,
+  highlightedDocId,
+  registerRowRef,
 }: VolunteerTableGroupProps) {
   const t = useTranslations('Accounting.reimbursements');
   const tSections = useTranslations('Accounting.templates.sections');
@@ -426,10 +363,7 @@ function VolunteerTableGroup({
   // `vol.documents`, so compliance checks stay accurate regardless of view.
   const visibleDocs = visibleDocumentsForVolunteer(volunteer, filterSettings);
 
-  const sortedDocs = [...visibleDocs].sort(
-    (a, b) =>
-      STATUS_SORT_ORDER.indexOf(a.status) - STATUS_SORT_ORDER.indexOf(b.status),
-  );
+  const sortedDocs = sortDocsForDisplay(visibleDocs);
 
   if (sortedDocs.length === 0) return null;
 
@@ -437,28 +371,21 @@ function VolunteerTableGroup({
   // into one download, since each type is its own reimbursement batch.
   const readyByType: Partial<Record<PauschalenType, number>> = {};
   const readyIdsByType: Partial<Record<PauschalenType, string[]>> = {};
-  const lastSentByType: Partial<
-    Record<PauschalenType, { at: Date; by?: string; state?: SendState }>
-  > = {};
   for (const d of sortedDocs) {
     if (d.status !== 'timesheet-ready') continue;
     const type = d.pauschale;
     readyByType[type] = (readyByType[type] ?? 0) + 1;
     readyIdsByType[type] = [...(readyIdsByType[type] ?? []), d.id];
-    const latest = lastSentByType[type];
-    if (d.sentAt && (!latest || d.sentAt > latest.at)) {
-      lastSentByType[type] = {
-        at: d.sentAt,
-        by: d.sentBy,
-        state: d.sendState,
-      };
-    }
   }
   const readyTypes = Object.keys(readyByType) as PauschalenType[];
-  const TYPE_LABEL: Record<PauschalenType, string> = {
-    ehrenamt: t('toolbar.typeEP'),
-    uebungsleiter: t('toolbar.typeUL'),
-  };
+
+  const visibleDocIds = sortedDocs.map((d) => d.id);
+  const selectedVolCount = visibleDocIds.filter((id) =>
+    selectedIds.has(id),
+  ).length;
+  const volAllSelected =
+    visibleDocIds.length > 0 && selectedVolCount === visibleDocIds.length;
+  const volAnySelected = selectedVolCount > 0 && !volAllSelected;
 
   return (
     <>
@@ -470,6 +397,19 @@ function VolunteerTableGroup({
         )}
         onClick={() => setIsOpen((o) => !o)}
       >
+        <TableCell className="align-middle py-4 w-[26px]">
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: stops row toggling only */}
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops row toggling only */}
+          <div onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={
+                volAllSelected ? true : volAnySelected ? 'indeterminate' : false
+              }
+              onCheckedChange={(v) => onToggleVolunteer(volunteer, v === true)}
+              aria-label={t('massActions.selectAll' as Parameters<typeof t>[0])}
+            />
+          </div>
+        </TableCell>
         <TableCell className="align-middle overflow-hidden py-4">
           <div className="min-w-0 overflow-hidden">
             <div className="flex items-center gap-2 min-w-0">
@@ -521,12 +461,11 @@ function VolunteerTableGroup({
                     reimbursementTypeKey={
                       volunteer.reimbursementTypeKeys?.[type]
                     }
-                    typeLabel={TYPE_LABEL[type]}
+                    typeLabel={t(PAUSCHALE_LABEL_KEY[type])}
                     readyCount={readyByType[type] ?? 0}
                     invoiceIds={readyIdsByType[type] ?? []}
                     orgUId={orgUId}
                     volunteerName={volunteer.name}
-                    lastSent={lastSentByType[type]}
                   />
                 ))}
               </div>
@@ -582,12 +521,15 @@ function VolunteerTableGroup({
           return (
             <TableRow
               key={doc.id}
+              ref={(el) => registerRowRef(doc.id, el)}
               className={cn(
                 'transition-colors',
                 canOpenSheet
                   ? 'cursor-pointer hover:bg-muted/30'
                   : 'cursor-default',
                 !isActive && !meta.isYourAction && !isGenerate && 'bg-muted/20',
+                highlightedDocId === doc.id &&
+                  'outline outline-2 outline-destructive outline-offset-[-2px]',
               )}
               onClick={() => {
                 if (rowAction === 'create') {
@@ -598,6 +540,19 @@ function VolunteerTableGroup({
                 if (rowAction === 'open') onDocumentClick(doc, volunteer);
               }}
             >
+              <TableCell className="py-3 align-top w-[26px]">
+                {/* biome-ignore lint/a11y/noStaticElementInteractions: stops row action on checkbox click */}
+                {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops row action on checkbox click */}
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selectedIds.has(doc.id)}
+                    onCheckedChange={() => onToggleDoc(doc.id)}
+                    aria-label={t(
+                      'massActions.selectRow' as Parameters<typeof t>[0],
+                    )}
+                  />
+                </div>
+              </TableCell>
               <TableCell
                 className={cn(
                   'pl-6 py-3 align-top overflow-hidden',
@@ -636,13 +591,18 @@ function VolunteerTableGroup({
                   )}
                   {sentAt && (
                     <span className="text-sm text-muted-foreground">
-                      {t.rich('docs.statusLabel.sentBy', {
-                        by: doc.sentBy
-                          ? abbreviateName(doc.sentBy)
-                          : t('bundle.unknownUser'),
-                        at: formatDate(sentAt),
-                        name: profileName,
-                      })}
+                      {t.rich(
+                        doc.deliveredVia === 'download'
+                          ? 'docs.statusLabel.downloadedBy'
+                          : 'docs.statusLabel.sentBy',
+                        {
+                          by: doc.sentBy
+                            ? abbreviateName(doc.sentBy)
+                            : t('bundle.unknownUser'),
+                          at: formatDate(sentAt),
+                          name: profileName,
+                        },
+                      )}
                     </span>
                   )}
                   {docNonCompliant && (
@@ -788,6 +748,14 @@ interface ReimbursementsTableProps {
   filterSettings: FilterSettings;
   canCreateDocuments: boolean;
   templateReadiness: TemplateReadinessByPauschale;
+  selectedIds: ReadonlySet<string>;
+  onToggleDoc: (id: string) => void;
+  onToggleVolunteer: (vol: BoardVolunteer, select: boolean) => void;
+  onToggleAll: (select: boolean) => void;
+  allSelected: boolean;
+  anySelected: boolean;
+  highlightedDocId: string | null;
+  registerRowRef: (id: string, el: HTMLElement | null) => void;
 }
 
 export function ReimbursementsTable({
@@ -798,6 +766,14 @@ export function ReimbursementsTable({
   filterSettings,
   canCreateDocuments,
   templateReadiness,
+  selectedIds,
+  onToggleDoc,
+  onToggleVolunteer,
+  onToggleAll,
+  allSelected,
+  anySelected,
+  highlightedDocId,
+  registerRowRef,
 }: ReimbursementsTableProps) {
   const t = useTranslations('Accounting.reimbursements');
 
@@ -806,6 +782,19 @@ export function ReimbursementsTable({
       <Table className="table-fixed min-w-[860px]">
         <TableHeader>
           <TableRow className="hover:bg-transparent">
+            <TableHead className="w-[26px]">
+              <div className="opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                <Checkbox
+                  checked={
+                    allSelected ? true : anySelected ? 'indeterminate' : false
+                  }
+                  onCheckedChange={(v) => onToggleAll(v === true)}
+                  aria-label={t(
+                    'massActions.selectAll' as Parameters<typeof t>[0],
+                  )}
+                />
+              </div>
+            </TableHead>
             <TableHead className="w-52">{t('tableHead.volunteer')}</TableHead>
             <TableHead className="w-36">{t('tableHead.status')}</TableHead>
             <TableHead className="w-14 text-right">
@@ -830,6 +819,11 @@ export function ReimbursementsTable({
               filterSettings={filterSettings}
               canCreateDocuments={canCreateDocuments}
               templateReadiness={templateReadiness}
+              selectedIds={selectedIds}
+              onToggleDoc={onToggleDoc}
+              onToggleVolunteer={onToggleVolunteer}
+              highlightedDocId={highlightedDocId}
+              registerRowRef={registerRowRef}
             />
           ))}
         </TableBody>

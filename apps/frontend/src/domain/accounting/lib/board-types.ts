@@ -2,6 +2,8 @@ import type { ReimbursementTypeKey } from '@repo/data';
 import type { PauschalenType } from '../components/doc-type-header';
 import type { SigneeRole } from '../components/template/types';
 
+export type { PauschalenType };
+
 export type DocStatus =
   | 'contract-generate'
   | 'contract-draft'
@@ -110,6 +112,8 @@ export interface BoardDocument {
   declinedAt?: Date;
   /** Which seat in the signing chain declined — determines where the pipeline/timeline gets cut off. */
   declinedAtRole?: SigneeRole;
+  /** How this timesheet was last handed to accounting — picks the status verb (emailed vs downloaded). */
+  deliveredVia?: 'email' | 'download';
   /** Timesheet only: when and by whom it was last emailed to accounting. */
   sentAt?: Date;
   sentBy?: string;

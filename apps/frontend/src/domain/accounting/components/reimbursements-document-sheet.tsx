@@ -20,6 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@repo/ui';
+import { parseISO } from 'date-fns';
 import {
   CheckIcon,
   ClockIcon,
@@ -39,6 +40,7 @@ import { useFormatting } from '@/lib/formatting/use-formatting';
 import {
   contractStatusToDocStatus,
   creationTargetFor,
+  deliveryTimelineLabelKey,
   invoiceStatusToDocStatus,
   mapSignatureToSignee,
 } from '../lib/board-data.utils';
@@ -288,7 +290,7 @@ function buildTimeline(
   const entries: TimelineEntry[] = [];
 
   for (const change of detail.statusChanges) {
-    const actor = change.actorUser?.name ?? t('timeline.actorOrg');
+    const actor = change.actorUser?.name ?? t('pipeline.actorOrg');
     const occurredAt = new Date(change.occurredAt);
     switch (change.type) {
       case 'CREATED':
@@ -334,7 +336,23 @@ function buildTimeline(
     }
   }
 
-  return entries;
+  const deliveries = detail && 'deliveries' in detail ? detail.deliveries : [];
+  for (const delivery of deliveries) {
+    entries.push({
+      id: delivery.id,
+      label: t(deliveryTimelineLabelKey(delivery.method, delivery.status)),
+      actor: delivery.deliveredByUser?.name ?? t('pipeline.actorOrg'),
+      date: parseISO(delivery.occurredAt),
+    });
+  }
+
+  return entries
+    .map((entry, index) => ({ entry, index }))
+    .sort(
+      (a, b) =>
+        a.entry.date.getTime() - b.entry.date.getTime() || a.index - b.index,
+    )
+    .map(({ entry }) => entry);
 }
 
 // ─── DocumentSheet ────────────────────────────────────────────────────────────

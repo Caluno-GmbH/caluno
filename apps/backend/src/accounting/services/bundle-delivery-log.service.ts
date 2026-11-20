@@ -22,6 +22,14 @@ export interface LatestEmailDelivery {
   deliveredByUserId: string | null;
   status: EmailDeliveryStatus;
 }
+
+export interface InvoiceDeliveryRecord {
+  id: string;
+  method: BundleDeliveryMethod;
+  occurredAt: Date;
+  deliveredByUserId: string | null;
+  status: EmailDeliveryStatus | null;
+}
 export const DEFAULT_DELIVERY_LOG_PAGE_SIZE = 50;
 
 @Injectable()
@@ -133,5 +141,57 @@ export class BundleDeliveryLogService {
       }
     }
     return latest;
+  }
+
+  /**
+   * Deliveries for a batch of invoice ids, newest first per invoice.
+   *
+   * Deliberately not filtered by `organizationUnitId`: the ids come from
+   * invoices that were themselves loaded through tenant-scoped queries, while a
+   * delivery's unit is the header unit that performed the action. An admin
+   * acting from a parent unit records the parent, so filtering by either the
+   * invoice's unit or the current header unit would hide legitimate history
+   * from one of the two views. Same rule as `findLatestEmailDeliveries`.
+   */
+  async findDeliveriesByInvoiceId(
+    invoiceIds: readonly string[],
+  ): Promise<Map<string, InvoiceDeliveryRecord[]>> {
+    const byInvoice = new Map<string, InvoiceDeliveryRecord[]>();
+    if (invoiceIds.length === 0) return byInvoice;
+
+    const deliveries = schema.reimbursementBundleDeliveries;
+    const rows = await this.db
+      .select({
+        id: deliveries.id,
+        invoiceIds: deliveries.invoiceIds,
+        method: deliveries.method,
+        occurredAt: deliveries.occurredAt,
+        deliveredByUserId: deliveries.deliveredByUserId,
+        emailStatus: deliveries.emailStatus,
+      })
+      .from(deliveries)
+      .where(arrayOverlaps(deliveries.invoiceIds, [...invoiceIds]))
+      .orderBy(desc(deliveries.occurredAt));
+
+    const wanted = new Set(invoiceIds);
+    for (const row of rows) {
+      const record: InvoiceDeliveryRecord = {
+        id: row.id,
+        method: row.method,
+        occurredAt: row.occurredAt,
+        deliveredByUserId: row.deliveredByUserId,
+        status: row.emailStatus ?? null,
+      };
+      for (const invoiceId of row.invoiceIds) {
+        if (!wanted.has(invoiceId)) continue;
+        const list = byInvoice.get(invoiceId);
+        if (list) {
+          list.push(record);
+        } else {
+          byInvoice.set(invoiceId, [record]);
+        }
+      }
+    }
+    return byInvoice;
   }
 }

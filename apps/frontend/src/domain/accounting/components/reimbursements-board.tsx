@@ -1,8 +1,17 @@
 'use client';
 
 import {
+  BundleDeliveryMethod,
+  DataError,
+  type ReimbursementTypeKey,
+} from '@repo/data';
+import {
+  useAccountingDeliverySettings,
+  useBundleSendPreview,
   useDeclineContract,
   useDeclineInvoice,
+  useQueryClient,
+  useSendReimbursementBundle,
   useSignContract,
   useSignInvoice,
 } from '@repo/data/react';
@@ -30,7 +39,7 @@ import {
   SearchIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useReimbursementBoardData } from '../hooks/use-reimbursement-board-data';
 import {
@@ -41,6 +50,7 @@ import {
 import {
   documentMatchesFilterSettings,
   filterVolunteers,
+  visibleDocumentsForVolunteer,
 } from '../lib/board-filters';
 import { isYourActionStatus } from '../lib/board-status';
 import type {
@@ -57,18 +67,46 @@ import {
   DEFAULT_FILTER_SETTINGS,
 } from '../lib/board-types';
 import {
+  requestBundleDownload,
+  triggerBlobDownload,
+} from '../lib/download-bundle';
+import {
+  type BundleGroup,
+  type BundleNeedingAttention,
+  type BundlePreviewOutcome,
+  buildBundleSendArgs,
+  bundleKey,
+  contractIdsToCountersign,
+  firstBlockingDocId,
+  groupBundles,
+  mapWithConcurrency,
+  resolveSelectedPairs,
+  type SendableBundle,
+  selectableDocIds,
+  splitBundlePreviews,
+  summarizeSettled,
+  timesheetIdsToCountersign,
+} from '../lib/mass-actions';
+import { reportBundleDownloadFailure } from '../lib/report-bundle-download-failure';
+import {
   documentCreationBlockedFor,
   type TemplateReadinessByPauschale,
 } from '../lib/setup-status';
+import { BundleBatchConfirmDialog } from './bundle-batch-confirm-dialog';
 import { ContractCreationModal } from './contract-creation-modal';
 import { CreateDocumentModal } from './create-document-modal';
 import { InvoiceCreationModal } from './invoice-creation-modal';
+import { MassActionBar } from './mass-action-bar';
 import type { DateRange } from './period-picker';
 import { lastMonthRange, PeriodPicker, thisMonthRange } from './period-picker';
 import { DocumentSheet } from './reimbursements-document-sheet';
 import { ReimbursementsTable } from './reimbursements-volunteer-group';
 
 type SortOption = 'action-needed' | 'newest';
+
+// Bounded so "select all" cannot fire hundreds of bundle previews (each one
+// builds the bundle's document set server-side) at the API at once.
+const PREVIEW_CONCURRENCY = 4;
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = [
@@ -247,6 +285,22 @@ export function ReimbursementsBoard({
   const signInvoice = useSignInvoice();
   const declineContract = useDeclineContract();
   const declineInvoice = useDeclineInvoice();
+  const preview = useBundleSendPreview();
+  const send = useSendReimbursementBundle();
+  const queryClient = useQueryClient();
+
+  const deliverySettingsQuery = useAccountingDeliverySettings(orgUId);
+  const deliverySettings = deliverySettingsQuery.data;
+  // `null` while the settings are unknown (loading, or failed to load): the
+  // bundle action must not guess, because a download in an email unit records a
+  // download and marks the invoices paid. The per-row control already refuses
+  // to act in this state; the mass bar used to default to "download".
+  const bundleMode: 'send' | 'download' | null = deliverySettings
+    ? deliverySettings.deliveryMethod === BundleDeliveryMethod.Email &&
+      deliverySettings.recipientEmail
+      ? 'send'
+      : 'download'
+    : null;
 
   // Filters — one object; dateRange stays owned by the page header and is merged in.
   const [filterSettings, setFilterSettings] = useState<FilterSettings>(
@@ -258,6 +312,398 @@ export function ReimbursementsBoard({
     (): FilterSettings => ({ ...filterSettings, dateRange }),
     [filterSettings, dateRange],
   );
+
+  const filteredVolunteers = useMemo(
+    () => filterVolunteers(volunteers, effectiveFilterSettings),
+    [volunteers, effectiveFilterSettings],
+  );
+
+  const sortedFilteredVolunteers = useMemo(
+    () => sortVolunteers(filteredVolunteers, sortOption),
+    [filteredVolunteers, sortOption],
+  );
+
+  // ─── Selection state ────────────────────────────────────────────────────────
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Clear selection whenever view-defining filters change.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally keyed on specific filter fields and props
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [
+    filterSettings.documentType,
+    filterSettings.nextAction,
+    filterSettings.pauschaleType,
+    filterSettings.volunteerName,
+    dateRange,
+    year,
+  ]);
+
+  function toggleDoc(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleVolunteer(vol: BoardVolunteer, select: boolean) {
+    const ids = visibleDocumentsForVolunteer(vol, effectiveFilterSettings).map(
+      (d) => d.id,
+    );
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (select)
+        ids.forEach((id) => {
+          next.add(id);
+        });
+      else
+        ids.forEach((id) => {
+          next.delete(id);
+        });
+      return next;
+    });
+  }
+
+  function toggleAll(select: boolean) {
+    if (select) {
+      setSelectedIds(
+        new Set(
+          selectableDocIds(sortedFilteredVolunteers, effectiveFilterSettings),
+        ),
+      );
+    } else {
+      setSelectedIds(new Set());
+    }
+  }
+
+  // ─── Row-ref registry + highlight ───────────────────────────────────────────
+  const rowRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const [highlightedDocId, setHighlightedDocId] = useState<string | null>(null);
+
+  function registerRowRef(id: string, el: HTMLElement | null) {
+    if (el) rowRefs.current.set(id, el);
+    else rowRefs.current.delete(id);
+  }
+
+  function scrollToAndHighlight(id: string) {
+    const el = rowRefs.current.get(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setHighlightedDocId(id);
+    setTimeout(() => setHighlightedDocId(null), 2000);
+  }
+
+  // ─── Guard ───────────────────────────────────────────────────────────────────
+  function guardSelection(pairs: DocVolPair[]): boolean {
+    const id = firstBlockingDocId(pairs);
+    if (id) {
+      scrollToAndHighlight(id);
+      toast.error(t('massActions.blockedByIssues'));
+      return false;
+    }
+    return true;
+  }
+
+  // ─── Mass-action state ───────────────────────────────────────────────────────
+  const [busyAction, setBusyAction] = useState<
+    'contracts' | 'timesheets' | 'bundles' | null
+  >(null);
+
+  // Bundle batch confirm dialog state
+  type SendableItem = SendableBundle;
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  const [batchSendable, setBatchSendable] = useState<SendableItem[]>([]);
+  const [batchNeedsAttention, setBatchNeedsAttention] = useState<
+    BundleNeedingAttention[]
+  >([]);
+  function deselectIds(ids: string[]) {
+    if (ids.length === 0) return;
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => {
+        next.delete(id);
+      });
+      return next;
+    });
+  }
+
+  // Drop the ids whose mutation fulfilled from the selection, keeping failed
+  // ones selected so a retry acts on exactly what's left. `ids` and `results`
+  // are index-aligned (same array that was mapped into Promise.allSettled).
+  function deselectSucceeded(
+    ids: string[],
+    results: PromiseSettledResult<unknown>[],
+  ) {
+    deselectIds(ids.filter((_, i) => results[i]?.status === 'fulfilled'));
+  }
+
+  // ─── Mass countersign handlers ───────────────────────────────────────────────
+  // Contract and timesheet countersigning share one flow; only the row selector,
+  // the mutation, and the toast copy differ.
+  async function runMassCountersign(opts: {
+    action: 'contracts' | 'timesheets';
+    selectIds: (pairs: DocVolPair[]) => string[];
+    mutate: (id: string) => Promise<unknown>;
+    onDone: (count: number) => void;
+    onPartial: (done: number, total: number, failed: number) => void;
+  }) {
+    const pairs = resolveSelectedPairs(
+      sortedFilteredVolunteers,
+      effectiveFilterSettings,
+      selectedIds,
+    );
+    if (!guardSelection(pairs)) return;
+    const ids = opts.selectIds(pairs);
+    if (ids.length === 0) return;
+    setBusyAction(opts.action);
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) => opts.mutate(id)),
+      );
+      const { succeeded, failed } = summarizeSettled(results);
+      if (failed === 0) opts.onDone(succeeded);
+      else opts.onPartial(succeeded, ids.length, failed);
+      deselectSucceeded(ids, results);
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  function handleMassCountersignContracts() {
+    return runMassCountersign({
+      action: 'contracts',
+      selectIds: contractIdsToCountersign,
+      mutate: (id) => signContract.mutateAsync(id),
+      onDone: (count) =>
+        toast.success(t('massActions.countersignContractsDone', { count })),
+      onPartial: (done, total, failed) =>
+        toast.warning(
+          t('massActions.countersignContractsPartial', { done, total, failed }),
+        ),
+    });
+  }
+
+  function handleMassCountersignTimesheets() {
+    return runMassCountersign({
+      action: 'timesheets',
+      selectIds: timesheetIdsToCountersign,
+      mutate: (id) => signInvoice.mutateAsync(id),
+      onDone: (count) =>
+        toast.success(t('massActions.countersignTimesheetsDone', { count })),
+      onPartial: (done, total, failed) =>
+        toast.warning(
+          t('massActions.countersignTimesheetsPartial', {
+            done,
+            total,
+            failed,
+          }),
+        ),
+    });
+  }
+
+  // ─── Mass bundle handler ─────────────────────────────────────────────────────
+  async function handleMassBundles() {
+    const pairs = resolveSelectedPairs(
+      sortedFilteredVolunteers,
+      effectiveFilterSettings,
+      selectedIds,
+    );
+    if (!guardSelection(pairs)) return;
+    const groups = groupBundles(pairs);
+    if (groups.length === 0) return;
+    // Unknown delivery method: do nothing rather than guess "download".
+    if (!bundleMode) return;
+    setBusyAction('bundles');
+
+    try {
+      if (bundleMode === 'send') {
+        const previewResults = await mapWithConcurrency(
+          groups,
+          PREVIEW_CONCURRENCY,
+          async (group): Promise<BundlePreviewOutcome> => {
+            if (!group.reimbursementTypeKey) {
+              return {
+                group,
+                recipientEmail: null,
+                fitsInEmail: false,
+                issues: [],
+                subject: '',
+                previewFailed: true,
+              };
+            }
+            try {
+              const result = await preview.mutateAsync({
+                volunteerId: group.volunteerId,
+                reimbursementTypeKey: group.reimbursementTypeKey,
+                invoiceIds: group.invoiceIds,
+              });
+              return { group, ...result };
+            } catch {
+              // Not "too large": the preview never answered, so the bundle may
+              // be perfectly sendable once the admin retries.
+              return {
+                group,
+                recipientEmail: null,
+                fitsInEmail: false,
+                issues: [],
+                subject: '',
+                previewFailed: true,
+              };
+            }
+          },
+        );
+
+        const { sendable, needsAttention } =
+          splitBundlePreviews(previewResults);
+        setBatchSendable(sendable);
+        setBatchNeedsAttention(needsAttention);
+        setBatchDialogOpen(true);
+      } else {
+        // Download mode — no dialog. Download one bundle at a time: each request
+        // marks its invoices paid server-side, and browsers silently drop all
+        // but the first of several downloads fired together — which would mark
+        // bundles paid without ever handing the file over.
+        const downloadable = groups.filter(
+          (
+            g,
+          ): g is BundleGroup & {
+            reimbursementTypeKey: ReimbursementTypeKey;
+          } => g.reimbursementTypeKey !== undefined,
+        );
+        const noTypeCount = groups.length - downloadable.length;
+        let succeeded = 0;
+        const succeededInvoiceIds: string[] = [];
+        for (const g of downloadable) {
+          try {
+            const blob = await requestBundleDownload({
+              volunteerId: g.volunteerId,
+              reimbursementTypeKey: g.reimbursementTypeKey,
+              invoiceIds: g.invoiceIds,
+              orgUId,
+            });
+            triggerBlobDownload(
+              blob,
+              `Abrechnung-${g.volunteerId.slice(0, 8)}.zip`,
+            );
+            succeeded++;
+            succeededInvoiceIds.push(...g.invoiceIds);
+          } catch (error) {
+            // Rolled into the needs-attention total below; a failed download
+            // leaves its rows selected so the admin can retry them. Report the
+            // reason — the admin only sees the aggregate count.
+            void reportBundleDownloadFailure(error, {
+              volunteerId: g.volunteerId,
+              reimbursementTypeKey: g.reimbursementTypeKey,
+            });
+          }
+        }
+        const failed = downloadable.length - succeeded;
+        queryClient.invalidateQueries({ queryKey: ['accounting'] });
+        deselectIds(succeededInvoiceIds);
+        const totalFailed = failed + noTypeCount;
+        if (totalFailed > 0) {
+          toast.warning(
+            t('massActions.bundlesDownloadedDone', { count: succeeded }) +
+              ' · ' +
+              t('massActions.bundlesNeedAttention', { count: totalFailed }),
+          );
+        } else {
+          toast.success(
+            t('massActions.bundlesDownloadedDone', { count: succeeded }),
+          );
+        }
+      }
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleBatchConfirm(keysToSend: string[]) {
+    const keySet = new Set(keysToSend);
+    const toSend = batchSendable.filter((p) => keySet.has(bundleKey(p.group)));
+    if (toSend.length === 0) {
+      setBatchDialogOpen(false);
+      return;
+    }
+    setBusyAction('bundles');
+    const needsAttentionCount = batchNeedsAttention.length;
+    try {
+      const results = await Promise.allSettled(
+        toSend.map((p) => {
+          if (!p.group.reimbursementTypeKey)
+            return Promise.reject(new Error('no-type'));
+          return send.mutateAsync(
+            buildBundleSendArgs(
+              {
+                volunteerId: p.group.volunteerId,
+                reimbursementTypeKey: p.group.reimbursementTypeKey,
+                invoiceIds: p.group.invoiceIds,
+              },
+              {
+                issues: p.issues,
+                recipientEmail: p.recipientEmail,
+                subject: p.subject,
+              },
+            ),
+          );
+        }),
+      );
+      const { succeeded, failed } = summarizeSettled(results);
+      // The single-row flow already maps CONFLICT to "review and confirm again";
+      // in a batch that is the common retry case (recipient/subject/issues
+      // changed between preview and send), so surface it instead of a bare count.
+      const issuesChanged = results.filter(
+        (result): result is PromiseRejectedResult =>
+          result.status === 'rejected' &&
+          result.reason instanceof DataError &&
+          result.reason.options?.code === 'CONFLICT',
+      ).length;
+      // Drop the groups that sent; a failed send keeps its rows selected to retry.
+      deselectIds(
+        toSend
+          .filter((_, i) => results[i]?.status === 'fulfilled')
+          .flatMap((p) => p.group.invoiceIds),
+      );
+      const totalNeedsAttention = failed + needsAttentionCount;
+      if (totalNeedsAttention > 0) {
+        const summary =
+          t('massActions.bundlesSentDone', { count: succeeded }) +
+          ' · ' +
+          t('massActions.bundlesNeedAttention', {
+            count: totalNeedsAttention,
+          });
+        toast.warning(
+          issuesChanged > 0
+            ? `${summary} · ${t('bundle.sendIssuesChanged')}`
+            : summary,
+        );
+      } else {
+        toast.success(t('massActions.bundlesSentDone', { count: succeeded }));
+      }
+    } finally {
+      setBusyAction(null);
+      setBatchDialogOpen(false);
+    }
+  }
+
+  // ─── Derived selection counts ────────────────────────────────────────────────
+  // Computed lazily only when selectedIds is non-empty to avoid work on every render.
+  const resolvedSelectionCounts = useMemo(() => {
+    if (selectedIds.size === 0) {
+      return { contractCount: 0, timesheetCount: 0, bundleCount: 0 };
+    }
+    const pairs = resolveSelectedPairs(
+      sortedFilteredVolunteers,
+      effectiveFilterSettings,
+      selectedIds,
+    );
+    return {
+      contractCount: contractIdsToCountersign(pairs).length,
+      timesheetCount: timesheetIdsToCountersign(pairs).length,
+      bundleCount: groupBundles(pairs).length,
+    };
+  }, [selectedIds, sortedFilteredVolunteers, effectiveFilterSettings]);
 
   // Sheet
   const [selectedDoc, setSelectedDoc] = useState<DocVolPair | null>(null);
@@ -384,16 +830,6 @@ export function ReimbursementsBoard({
     [volunteers, effectiveFilterSettings.pauschaleType],
   );
 
-  const filteredVolunteers = useMemo(
-    () => filterVolunteers(volunteers, effectiveFilterSettings),
-    [volunteers, effectiveFilterSettings],
-  );
-
-  const sortedFilteredVolunteers = useMemo(
-    () => sortVolunteers(filteredVolunteers, sortOption),
-    [filteredVolunteers, sortOption],
-  );
-
   // Tiles set documentType + nextAction together. Clicking the active
   // pipeline tile deselects back to All; changing documentType via the
   // dropdown always clears nextAction so the two cannot disagree.
@@ -423,6 +859,30 @@ export function ReimbursementsBoard({
     effectiveFilterSettings.nextAction !== 'any' ||
     effectiveFilterSettings.documentType !== 'all' ||
     effectiveFilterSettings.volunteerName.trim() !== '';
+
+  const allSelectableIds = useMemo(
+    () => selectableDocIds(sortedFilteredVolunteers, effectiveFilterSettings),
+    [sortedFilteredVolunteers, effectiveFilterSettings],
+  );
+
+  // Keep the selection to rows that are still selectable. A background refetch
+  // can change a selected doc's status or drop it entirely; without this the
+  // raw `selectedIds.size` (and the count/indeterminate state derived from it)
+  // would keep counting rows the admin can no longer act on.
+  useEffect(() => {
+    const selectable = new Set(allSelectableIds);
+    setSelectedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const next = new Set<string>();
+      for (const id of prev) if (selectable.has(id)) next.add(id);
+      return next.size === prev.size ? prev : next;
+    });
+  }, [allSelectableIds]);
+
+  const allSelected =
+    allSelectableIds.length > 0 &&
+    allSelectableIds.every((id) => selectedIds.has(id));
+  const anySelected = selectedIds.size > 0;
 
   if (isLoading) {
     return <ReimbursementsBoardSkeleton />;
@@ -627,6 +1087,14 @@ export function ReimbursementsBoard({
           filterSettings={effectiveFilterSettings}
           canCreateDocuments={canCreateDocuments}
           templateReadiness={templateReadiness}
+          selectedIds={selectedIds}
+          onToggleDoc={toggleDoc}
+          onToggleVolunteer={toggleVolunteer}
+          onToggleAll={toggleAll}
+          allSelected={allSelected}
+          anySelected={anySelected}
+          highlightedDocId={highlightedDocId}
+          registerRowRef={registerRowRef}
         />
       )}
 
@@ -703,6 +1171,30 @@ export function ReimbursementsBoard({
         onContractSent={() => {}}
         onInvoiceSent={() => {}}
         templateReadiness={templateReadiness}
+      />
+
+      <MassActionBar
+        selectedCount={selectedIds.size}
+        contractCount={resolvedSelectionCounts.contractCount}
+        timesheetCount={resolvedSelectionCounts.timesheetCount}
+        bundleCount={resolvedSelectionCounts.bundleCount}
+        bundleMode={bundleMode}
+        busyAction={busyAction}
+        onCountersignContracts={() => void handleMassCountersignContracts()}
+        onCountersignTimesheets={() => void handleMassCountersignTimesheets()}
+        onSendBundles={() => void handleMassBundles()}
+        onDeselectAll={() => toggleAll(false)}
+      />
+
+      <BundleBatchConfirmDialog
+        open={batchDialogOpen}
+        sendable={batchSendable}
+        needsAttention={batchNeedsAttention}
+        isSending={send.isPending}
+        onOpenChange={(open) => {
+          if (!open && !send.isPending) setBatchDialogOpen(false);
+        }}
+        onConfirm={(keysToSend) => void handleBatchConfirm(keysToSend)}
       />
     </div>
   );
