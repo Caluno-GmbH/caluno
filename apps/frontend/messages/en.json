@@ -2335,6 +2335,10 @@
           "title": "Email sending is off",
           "description": "Recipient and subject only apply when bundles are sent by email. They are not saved while Download is selected."
         },
+        "unsavedChangesTitle": "Unsaved changes",
+        "unsavedChangesDescription": "You have unsaved changes. If you leave now, your changes will be lost.",
+        "unsavedChangesLeave": "Leave without saving",
+        "unsavedChangesStay": "Keep editing",
         "saveSuccess": "Delivery settings saved",
         "saveError": "We couldn’t save the delivery settings. Please try again.",
         "loadError": "We couldn’t load the delivery settings. Please reload the page.",

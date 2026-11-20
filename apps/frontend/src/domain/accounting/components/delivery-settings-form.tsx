@@ -9,6 +9,14 @@ import { useUpdateAccountingDeliverySettings } from '@repo/data/react';
 import {
   Alert,
   AlertDescription,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   AlertTitle,
   Button,
   cn,
@@ -22,6 +30,12 @@ import { useTranslations } from 'next-intl';
 import { type ChangeEvent, useEffect, useId, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import {
+  type GuardedNavigation,
+  stripKnownLocalePrefix,
+  useUnsavedChangesGuard,
+} from '@/hooks/use-unsaved-changes-guard';
+import { useRouter } from '@/i18n/navigation';
 import {
   buildDeliveryUpdate,
   createDeliveryDraft,
@@ -58,6 +72,7 @@ export function DeliverySettingsForm({
   const tCommon = useTranslations('Common');
   const sourceLabel = useSourceLabel();
   const update = useUpdateAccountingDeliverySettings(organizationUnitId);
+  const router = useRouter();
   const ids = {
     method: useId(),
     methodHint: useId(),
@@ -75,6 +90,8 @@ export function DeliverySettingsForm({
   );
   const [own, setOwn] = useState<DeliveryOwnFlags>(() => ownFlags(initial));
   const [pendingCaret, setPendingCaret] = useState<number | null>(null);
+  const [pendingNavigation, setPendingNavigation] =
+    useState<GuardedNavigation | null>(null);
 
   const schema = createDeliverySettingsSchema({
     invalidEmail: t('errors.invalidEmail'),
@@ -105,6 +122,13 @@ export function DeliverySettingsForm({
   const saving = update.isPending;
   const resetLabel = t('reset.inherited');
   const inheritedRecipient = settings.inheritedRecipientEmail ?? '';
+
+  // While there are unsaved edits the guard blocks every exit route (links,
+  // back/forward, tab close) and reports the attempted navigation here.
+  const { release: releaseNavigationGuard } = useUnsavedChangesGuard({
+    enabled: dirty,
+    onPrompt: setPendingNavigation,
+  });
 
   // A sibling/ancestor save refetches these settings. Adopt the fresh values
   // only while the form has no unsaved edits, so a background refetch never
@@ -221,6 +245,22 @@ export function DeliverySettingsForm({
       ),
     }));
     setPendingCaret(inserted.caret);
+  }
+
+  function handleLeave() {
+    const target = pendingNavigation;
+    setPendingNavigation(null);
+    if (!target) return;
+    releaseNavigationGuard();
+    if (target.type === 'back') {
+      if (target.delta === null) {
+        router.push(`/admin/${organizationUnitId}`);
+        return;
+      }
+      window.history.go(target.delta);
+      return;
+    }
+    router.push(stripKnownLocalePrefix(target.href));
   }
 
   function handleCancel() {
@@ -435,6 +475,36 @@ export function DeliverySettingsForm({
           {saving ? tCommon('saving') : tCommon('save')}
         </Button>
       </div>
+
+      {/* Radix portals the content to the body, and both action buttons are
+          type="button" so a click never submits the surrounding form. */}
+      <AlertDialog
+        open={pendingNavigation !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingNavigation(null);
+        }}
+      >
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('unsavedChangesTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('unsavedChangesDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button">
+              {t('unsavedChangesStay')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              onClick={handleLeave}
+              variant="destructive"
+            >
+              {t('unsavedChangesLeave')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   );
 }
