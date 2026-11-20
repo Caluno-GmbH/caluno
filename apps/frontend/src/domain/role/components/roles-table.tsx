@@ -37,21 +37,25 @@ export function RolesTable({ roles }: RolesTableProps) {
   };
 
   return (
-    <div className="rounded-md border overflow-x-auto">
+    <div className="@container rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>{t('table.name')}</TableHead>
-            <TableHead>{t('table.description')}</TableHead>
-            <TableHead>{t('table.permissions')}</TableHead>
-            <TableHead className="w-25" />
+            <TableHead className="hidden @2xl:table-cell">
+              {t('table.description')}
+            </TableHead>
+            <TableHead className="hidden @2xl:table-cell">
+              {t('table.permissions')}
+            </TableHead>
+            <TableHead className="w-px" />
           </TableRow>
         </TableHeader>
         <TableBody>
           {roles.map((role) => (
             <TableRow key={role.id}>
-              <TableCell className="font-medium">
-                <div className="flex items-center gap-2">
+              <TableCell className="font-medium whitespace-normal @2xl:min-w-48">
+                <div className="flex flex-wrap items-center gap-2">
                   <Link
                     href={`/admin/${orgUId}/settings/roles/${role.id}`}
                     className="hover:underline"
@@ -62,11 +66,19 @@ export function RolesTable({ roles }: RolesTableProps) {
                     <Badge variant="neutral">{t('table.systemBadge')}</Badge>
                   )}
                 </div>
+                <div className="text-muted-foreground mt-1 space-y-0.5 font-normal break-words @2xl:hidden">
+                  <p>{roleDescription(role)}</p>
+                  <p>
+                    {t('table.permissionsCount', {
+                      n: role.permissions.length,
+                    })}
+                  </p>
+                </div>
               </TableCell>
-              <TableCell className="text-muted-foreground">
+              <TableCell className="text-muted-foreground hidden min-w-64 whitespace-normal break-words @2xl:table-cell">
                 {roleDescription(role)}
               </TableCell>
-              <TableCell>
+              <TableCell className="hidden @2xl:table-cell">
                 {t('table.permissionsCount', { n: role.permissions.length })}
               </TableCell>
               <TableCell className="text-right">
