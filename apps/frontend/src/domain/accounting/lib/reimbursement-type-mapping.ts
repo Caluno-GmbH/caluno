@@ -14,6 +14,19 @@ const KEY_TO_PAUSCHALE: Record<ReimbursementTypeKey, PauschalenType> = {
   [ReimbursementTypeKey.Uebungsleiter]: 'uebungsleiter',
 };
 
+/**
+ * Translation key (under `Accounting.reimbursements`) for each Pauschale's short
+ * label. Kept here so the board and the batch dialog read one map instead of
+ * hard-coding the Pauschale ids in their own copies.
+ */
+export const PAUSCHALE_LABEL_KEY: Record<
+  PauschalenType,
+  'toolbar.typeEP' | 'toolbar.typeUL'
+> = {
+  ehrenamt: 'toolbar.typeEP',
+  uebungsleiter: 'toolbar.typeUL',
+};
+
 /** The prototype's lowercase Pauschale id ↔ the API's ReimbursementTypeKey enum. */
 export function reimbursementTypeKeyFor(
   pauschale: PauschalenType,

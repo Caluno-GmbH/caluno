@@ -30,7 +30,6 @@ export * from './react/hooks/use-available-events-infinite';
 export * from './react/hooks/use-available-shift-instance-day-counts';
 export * from './react/hooks/use-available-shift-instances-infinite';
 export * from './react/hooks/use-block';
-export * from './react/hooks/use-bundle-download';
 export * from './react/hooks/use-check-in';
 export * from './react/hooks/use-check-in-actions';
 export * from './react/hooks/use-check-in-context';

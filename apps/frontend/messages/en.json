@@ -2449,13 +2449,9 @@
       "bundle": {
         "actionLabel": "Download bundle",
         "readyCount": "{count} ready",
-        "lastDownloaded": "last downloaded by <name>{by}</name> on {at}",
-        "neverDownloaded": "not downloaded yet",
         "unknownUser": "unknown",
         "downloadError": "We couldn't download the bundle. Please try again.",
         "sendActionLabel": "Send bundle",
-        "lastSent": "last sent by <name>{by}</name> on {at}",
-        "neverSent": "not sent yet",
         "noRecipient": "Add an accounting email address in the accounting settings to send bundles.",
         "sendSuccess": "The bundle is on its way to accounting",
         "sendError": "We couldn’t send the bundle. Please try again.",
@@ -2473,8 +2469,6 @@
           },
           "confirm": "Send anyway"
         },
-        "lastSendFailed": "last send failed on {at}",
-        "lastSending": "sending…",
         "downloadInstead": "Download instead",
         "settingsError": "Delivery settings unavailable"
       },
@@ -2523,6 +2517,10 @@
           "timelineCountersigned": "Countersigned",
           "timelineActivated": "Activated",
           "timelineDeclined": "Declined",
+          "timelineSent": "Sent to accounting",
+          "timelineDownloaded": "Downloaded",
+          "timelineSending": "Sending to accounting…",
+          "timelineSendFailed": "Sending failed",
           "declineReasonTitle": "Decline reason",
           "noAction": "Nothing to do",
           "pdfView": "View PDF",
@@ -2560,6 +2558,7 @@
           "declined": "Declined",
           "templateMissingHint": "No template for this allowance type yet. Set it up under Accounting → Templates.",
           "sentBy": "Sent by <name>{by}</name> on {at}",
+          "downloadedBy": "Downloaded by <name>{by}</name> on {at}",
           "sendFailed": "Sending failed on {at}",
           "sending": "Sending to accounting…"
         },
@@ -2707,6 +2706,37 @@
         "contractError": "We couldn't decline the agreement for {name}.",
         "invoice": "Timesheet declined for {name}.",
         "invoiceError": "We couldn't decline the timesheet for {name}."
+      },
+      "massActions": {
+        "selectedCount": "{count, plural, =1 {1 document selected} other {{count} documents selected}}",
+        "selectAll": "Select all",
+        "selectRow": "Select row",
+        "deselectAll": "Deselect all",
+        "noActions": "No available actions",
+        "countersignContracts": "{count, plural, =1 {Countersign 1 contract} other {Countersign {count} contracts}}",
+        "countersignTimesheets": "{count, plural, =1 {Countersign 1 timesheet} other {Countersign {count} timesheets}}",
+        "sendBundles": "{count, plural, =1 {Send 1 bundle} other {Send {count} bundles}}",
+        "downloadBundles": "{count, plural, =1 {Download 1 bundle} other {Download {count} bundles}}",
+        "countersignContractsDone": "{count, plural, =1 {1 contract countersigned} other {{count} contracts countersigned}}",
+        "countersignContractsPartial": "{done} of {total} contracts countersigned, {failed} failed",
+        "countersignTimesheetsDone": "{count, plural, =1 {1 timesheet countersigned} other {{count} timesheets countersigned}}",
+        "countersignTimesheetsPartial": "{done} of {total} timesheets countersigned, {failed} failed",
+        "bundlesSentDone": "{count, plural, =1 {1 bundle sent} other {{count} bundles sent}}",
+        "bundlesDownloadedDone": "{count, plural, =1 {1 bundle downloaded} other {{count} bundles downloaded}}",
+        "bundlesNeedAttention": "{count, plural, =1 {1 bundle needs attention} other {{count} bundles need attention}}",
+        "blockedByIssues": "Some selected documents have issues to solve first.",
+        "confirm": {
+          "title": "Send bundles?",
+          "description": "The following bundles will be sent to accounting.",
+          "recipientLine": "To {email}",
+          "docCount": "{count, plural, one {# document} other {# documents}}",
+          "needsAttentionLabel": "Needs attention",
+          "issuesGroupLabel": "Has issues — confirm each to send",
+          "previewFailed": "Couldn’t prepare this bundle. Please try again.",
+          "sendAnyway": "Send anyway",
+          "sendCount": "{count, plural, =0 {Send} one {Send # bundle} other {Send # bundles}}",
+          "cancel": "Cancel"
+        }
       }
     },
     "templates": {

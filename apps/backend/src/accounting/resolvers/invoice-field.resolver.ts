@@ -11,7 +11,10 @@ import {
   InvoiceTimeEntryMapper,
   ReimbursementTypeMapper,
 } from '../mappers';
-import { InvoiceEmailDelivery } from '../models/bundle-delivery.model';
+import {
+  InvoiceDelivery,
+  InvoiceEmailDelivery,
+} from '../models/bundle-delivery.model';
 import { DocumentTemplate } from '../models/document-template.model';
 import { Invoice } from '../models/invoice.model';
 import { InvoiceSignature } from '../models/invoice-signature.model';
@@ -240,5 +243,57 @@ export class InvoiceFieldResolver {
         : null,
       status: delivery.status,
     };
+  }
+
+  /**
+   * Accounting's own record, not the volunteer's: their own timesheet reads
+   * null, so `invoice(id)` / `myInvoices` never show which admin handed it over.
+   */
+  @ResolveField(() => InvoiceDelivery, { nullable: true })
+  async lastDelivery(
+    @Parent() invoice: InvoiceEntity,
+    @Session() session: UserSession,
+    @Loader(BundleDeliveryLoader) deliveryLoader: BundleDeliveryLoader,
+    @Loader(AccountingUserLoader) userLoader: AccountingUserLoader,
+  ): Promise<InvoiceDelivery | null> {
+    if (invoice.volunteerId === session.user.id) return null;
+    const deliveries = await deliveryLoader.deliveriesByInvoiceId.load(
+      invoice.id,
+    );
+    const delivery = deliveries[0];
+    if (!delivery) return null;
+    return {
+      id: delivery.id,
+      method: delivery.method,
+      occurredAt: delivery.occurredAt,
+      deliveredByUser: delivery.deliveredByUserId
+        ? await userLoader.userById.load(delivery.deliveredByUserId)
+        : null,
+      status: delivery.status,
+    };
+  }
+
+  @ResolveField(() => [InvoiceDelivery])
+  async deliveries(
+    @Parent() invoice: InvoiceEntity,
+    @Session() session: UserSession,
+    @Loader(BundleDeliveryLoader) deliveryLoader: BundleDeliveryLoader,
+    @Loader(AccountingUserLoader) userLoader: AccountingUserLoader,
+  ): Promise<InvoiceDelivery[]> {
+    if (invoice.volunteerId === session.user.id) return [];
+    const deliveries = await deliveryLoader.deliveriesByInvoiceId.load(
+      invoice.id,
+    );
+    return Promise.all(
+      deliveries.map(async (delivery) => ({
+        id: delivery.id,
+        method: delivery.method,
+        occurredAt: delivery.occurredAt,
+        deliveredByUser: delivery.deliveredByUserId
+          ? await userLoader.userById.load(delivery.deliveredByUserId)
+          : null,
+        status: delivery.status,
+      })),
+    );
   }
 }

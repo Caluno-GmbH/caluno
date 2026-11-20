@@ -22,7 +22,8 @@ import {
   cn,
   FieldError,
   Input,
-  SegmentedControl,
+  ToggleGroup,
+  ToggleGroupItem,
 } from '@repo/ui';
 import { InfoIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -328,18 +329,27 @@ export function DeliverySettingsForm({
             aria-describedby={ids.methodHint}
             className="m-0 min-w-0 border-0 p-0"
           >
-            <SegmentedControl
-              options={[
-                {
-                  value: BundleDeliveryMethod.Download,
-                  label: t('methodDownload'),
-                },
-                { value: BundleDeliveryMethod.Email, label: t('methodEmail') },
-              ]}
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="lg"
               value={values.method}
-              onChange={handleMethodChange}
-              className="max-w-sm"
-            />
+              onValueChange={(value) => {
+                if (
+                  value === BundleDeliveryMethod.Download ||
+                  value === BundleDeliveryMethod.Email
+                ) {
+                  handleMethodChange(value);
+                }
+              }}
+            >
+              <ToggleGroupItem value={BundleDeliveryMethod.Download}>
+                {t('methodDownload')}
+              </ToggleGroupItem>
+              <ToggleGroupItem value={BundleDeliveryMethod.Email}>
+                {t('methodEmail')}
+              </ToggleGroupItem>
+            </ToggleGroup>
           </fieldset>
           <p id={ids.methodHint} className="text-sm text-muted-foreground">
             {isEmailMethod(values.method)
@@ -411,7 +421,7 @@ export function DeliverySettingsForm({
               onReset={handleResetSubject}
               disabled={saving || emailDisabled}
             />
-            <div className="flex w-full max-w-2xl flex-wrap items-center gap-x-3 gap-y-2">
+            <div className="flex w-full max-w-3xl flex-wrap items-center gap-x-3 gap-y-2">
               <Input
                 id={ids.subject}
                 aria-invalid={!!errors.subject}
@@ -439,7 +449,7 @@ export function DeliverySettingsForm({
                 {errors.subject.message}
               </FieldError>
             )}
-            <div className="flex w-full max-w-2xl items-start justify-between gap-3">
+            <div className="flex w-full max-w-3xl items-start justify-between gap-3">
               <p id={ids.subjectHint} className="text-sm text-muted-foreground">
                 {t('subjectHint')}
               </p>
@@ -452,12 +462,12 @@ export function DeliverySettingsForm({
         </fieldset>
       </fieldset>
 
-      <div className="flex items-center justify-between gap-4 border-t pt-4">
+      <div className="flex gap-2 pt-10">
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           onClick={handleCancel}
-          disabled={saving}
+          disabled={!dirty || saving}
         >
           {tCommon('cancel')}
         </Button>

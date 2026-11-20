@@ -47,7 +47,7 @@ export function BundleSendConfirmDialog({
         </AlertDialogHeader>
 
         <ul className="space-y-2">
-          {issues.map((issue) => (
+          {[...new Set(issues)].map((issue) => (
             <li key={issue} className="flex items-start gap-2 text-sm">
               <TriangleAlertIcon
                 size={16}
