@@ -8,7 +8,7 @@
  *
  * Anyone holding the target's BETTER_AUTH_SECRET can sign in as these
  * synthetic accounts — they only belong to the `loadtest-*` orgs, and the seed
- * refuses to run in production.
+ * only runs with APP_ENV=load-test.
  */
 import { createHash, createHmac } from 'node:crypto';
 import {
@@ -17,9 +17,22 @@ import {
   type PlannedFixtureAccount,
 } from './fixture-helpers';
 
-export const LOAD_TEST_ORG_COUNT = Number(process.env.LOAD_TEST_ORGS ?? 10);
-export const LOAD_TEST_VOLUNTEERS_PER_UNIT = Number(
-  process.env.LOAD_TEST_VOLUNTEERS_PER_UNIT ?? 50,
+const positiveIntegerEnv = (name: string, fallback: number) => {
+  const raw = process.env[name];
+  if (raw === undefined) {
+    return fallback;
+  }
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`${name} must be a positive integer, got "${raw}".`);
+  }
+  return value;
+};
+
+export const LOAD_TEST_ORG_COUNT = positiveIntegerEnv('LOAD_TEST_ORGS', 10);
+export const LOAD_TEST_VOLUNTEERS_PER_UNIT = positiveIntegerEnv(
+  'LOAD_TEST_VOLUNTEERS_PER_UNIT',
+  50,
 );
 
 const EMAIL_DOMAIN = 'example.com';
@@ -96,7 +109,7 @@ export const signSessionCookie = (token: string, secret: string) =>
     `${token}.${createHmac('sha256', secret).update(token).digest('base64')}`,
   );
 
-/** Same alphabet and length as `generateCheckInId`, but stable per user. */
+/** A check-in code that is stable per user, so k6 knows it without the database. */
 export const loadTestCheckInId = (userId: string) => {
   const digest = createHash('sha256').update(`load-test-check-in:${userId}`);
   const bytes = digest.digest();

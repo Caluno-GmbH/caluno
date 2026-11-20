@@ -14,12 +14,13 @@
  *
  * Usage (from apps/backend, after migrate + `bun run db:seed`):
  *
- *   bun run db:fixtures:load-test
+ *   APP_ENV=load-test bun run db:fixtures:load-test
  *
  * The load-test backend runs it on boot (docker-entrypoint.sh). Re-runs are
  * idempotent, re-anchor the call-out and check-in shifts to tomorrow/today and
  * extend the sessions. Never run against production.
  */
+import { randomBytes } from 'node:crypto';
 import { hashPassword } from 'better-auth/crypto';
 import { inArray, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
@@ -57,7 +58,9 @@ import * as schema from './schema';
 
 process.env.TZ = 'Europe/Berlin';
 
-const PASSWORD = process.env.LOAD_TEST_PASSWORD ?? 'abcd1234';
+// k6 signs in through derived cookies, so nobody needs to know the password.
+const PASSWORD =
+  process.env.LOAD_TEST_PASSWORD ?? randomBytes(24).toString('base64url');
 const SESSION_DAYS = 30;
 const JOINED_PER_INSTANCE = 5;
 
@@ -184,8 +187,10 @@ const seedPastTimeEntries = async (
 };
 
 async function seedLoadTestFixtures() {
-  if (process.env.APP_ENV === 'production') {
-    throw new Error('Refusing to seed load-test fixtures into production.');
+  if (process.env.APP_ENV !== 'load-test') {
+    throw new Error(
+      'Refusing to seed load-test fixtures: set APP_ENV=load-test to confirm the target database.',
+    );
   }
   const secret = process.env.BETTER_AUTH_SECRET;
   if (!secret) {
