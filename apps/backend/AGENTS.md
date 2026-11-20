@@ -125,12 +125,13 @@ Integration tests connect to the `postgres` maintenance database to create/drop 
 
 ### Fixture datasets
 
-Two fixture datasets exist. Accounts share the `demo@caluno.org` group but Testing uses a `+testing_` discriminator so the sets do not collide when both are present:
+Three fixture datasets exist. Demo and Testing accounts share the `demo@caluno.org` group but Testing uses a `+testing_` discriminator so the sets do not collide when both are present. Load-test accounts use `loadtest+…@example.com`:
 
-| Dataset                                 | Script                                                           | Who loads it                                                                           |
-| --------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| **Altonaer Lesepaten** (the app's data) | [`src/database/demo-fixtures.ts`](src/database/demo-fixtures.ts) | `bun bootstrap` locally; **every deployed container** — the entrypoint always seeds it |
-| **Testing** (e2e)                       | [`src/database/fixtures.ts`](src/database/fixtures.ts)           | `bun run db:fixtures:e2e` locally; **staging + release entrypoint** (`APP_ENV=staging  | release`) after the demo seed — never production |
+| Dataset                                 | Script                                                                     | Who loads it                                                                                                                                       |
+| --------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Altonaer Lesepaten** (the app's data) | [`src/database/demo-fixtures.ts`](src/database/demo-fixtures.ts)           | `bun bootstrap` locally; **every deployed container** — the entrypoint always seeds it                                                             |
+| **Testing** (e2e)                       | [`src/database/fixtures.ts`](src/database/fixtures.ts)                     | `bun run db:fixtures:e2e` locally; **staging + release entrypoint** (`APP_ENV=staging                                                              | release`) after the demo seed — never production |
+| **Load test** (k6)                      | [`src/database/load-test-fixtures.ts`](src/database/load-test-fixtures.ts) | `bun run db:fixtures:load-test` with `APP_ENV=load-test` (it refuses otherwise); **load-test entrypoint** only. See `packages/load-test/README.md` |
 
 `bun bootstrap` resets the **development** database (not `_test`) via `docker compose down -v`, then migrates, seeds permissions, and loads the **demo** dataset only. It refuses to run unless `DB_HOST` is `localhost`, `127.0.0.1`, or `postgres`. Locally, load Testing yourself with `db:fixtures:e2e` when you need it — do not treat both as the default bootstrap.
 

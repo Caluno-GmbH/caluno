@@ -1,0 +1,103 @@
+# k6 load test (packages/load-test) against a deployed environment.
+# The environment seeds the load-test dataset on boot (docker-entrypoint.sh,
+# load-test only). This job never touches its database: it reads the
+# environment's Better Auth secret from Scaleway Secret Manager and derives the
+# same session cookies the seed created.
+name: Load test
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: Environment name; selects the `caluno-<env>-better-auth-secret` secret.
+        type: string
+        required: true
+      api-url:
+        description: Public API origin.
+        type: string
+        required: true
+      web-url:
+        description: Public web origin; page loads render the real SSR pages.
+        type: string
+        required: true
+      profile:
+        description: k6 profile (smoke, load, stress, spike, soak).
+        type: string
+        required: false
+        default: load
+      target-users:
+        description: Concurrent users to hold.
+        type: number
+        required: false
+        default: 200
+      hold:
+        description: How long to hold at target-users (k6 duration).
+        type: string
+        required: false
+        default: 10m
+    secrets:
+      SCW_SECRET_KEY:
+        description: Reads the environment's Better Auth secret from Scaleway Secret Manager.
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  k6:
+    name: k6 ${{ inputs.profile }} profile
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.profile == 'soak' && 180 || 60 }}
+    steps:
+      # No submodules: this job runs the pull request's code, so it gets no
+      # repository token and only the one secret it needs.
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: grafana/setup-k6-action@v1
+        with:
+          k6-version: 2.4.0
+
+      - name: Read the environment's Better Auth secret
+        id: auth-secret
+        env:
+          SCW_SECRET_KEY: ${{ secrets.SCW_SECRET_KEY }}
+          SCW_REGION: ${{ vars.SCW_DEFAULT_REGION }}
+          SCW_PROJECT_ID: ${{ vars.SCW_DEFAULT_PROJECT_ID }}
+          SECRET_NAME: caluno-${{ inputs.environment }}-better-auth-secret
+        run: |
+          set -o pipefail
+          secret=$(curl -fsS -H "X-Auth-Token: $SCW_SECRET_KEY" \
+            "https://api.scaleway.com/secret-manager/v1beta1/regions/${SCW_REGION}/secrets-by-path/versions/latest/access?secret_path=/&secret_name=${SECRET_NAME}&project_id=${SCW_PROJECT_ID}" \
+            | jq -er '.data' | base64 -d)
+          echo "::add-mask::$secret"
+          {
+            echo "value<<__SECRET__"
+            echo "$secret"
+            echo "__SECRET__"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Derive session cookies
+        env:
+          BETTER_AUTH_SECRET: ${{ steps.auth-secret.outputs.value }}
+        run: bun run --cwd apps/backend load-test:data
+
+      - name: Run k6
+        working-directory: packages/load-test
+        env:
+          API_URL: ${{ inputs.api-url }}
+          WEB_URL: ${{ inputs.web-url }}
+          TARGET_USERS: ${{ inputs.target-users }}
+          LOAD_HOLD: ${{ inputs.hold }}
+          PROFILE: ${{ inputs.profile }}
+        run: bun run "$PROFILE"
+
+      - name: Upload k6 report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: k6-report-${{ inputs.environment }}-${{ github.run_id }}
+          path: packages/load-test/results/
+          retention-days: 30
+          if-no-files-found: ignore

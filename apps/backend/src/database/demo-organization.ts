@@ -32,8 +32,8 @@ export type DemoOrganizationConfig = {
   orgName: string;
   orgDescription: string;
   contactEmail: string;
-  rootCoverImageUrl: string;
-  northCoverImageUrl: string;
+  rootCoverImageUrl: string | null;
+  northCoverImageUrl: string | null;
   supervisorRoleName: string;
   supervisorPermissions: readonly string[];
   regions: readonly DemoRegionDefinition[];

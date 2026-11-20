@@ -198,6 +198,17 @@
         "typescript": "^6.0.3",
       },
     },
+    "packages/load-test": {
+      "name": "@repo/load-test",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@repo/typescript-config": "*",
+        "@types/bun": "^1.4.4",
+        "@types/k6": "^2.3.1",
+        "@types/node": "^24.19.2",
+        "typescript": "^6.0.3",
+      },
+    },
     "packages/observability": {
       "name": "@repo/observability",
       "version": "0.0.0",
@@ -1344,6 +1355,8 @@
 
     "@repo/lifespan": ["@repo/lifespan@workspace:packages/lifespan"],
 
+    "@repo/load-test": ["@repo/load-test@workspace:packages/load-test"],
+
     "@repo/observability": ["@repo/observability@workspace:packages/observability"],
 
     "@repo/password-policy": ["@repo/password-policy@workspace:packages/password-policy"],
@@ -1761,6 +1774,8 @@
     "@types/jsesc": ["@types/jsesc@2.5.1", "", {}, "sha512-9VN+6yxLOPLOav+7PwjZbxiID2bVaeq0ED4qSQmdQTdjnXJSaCVKTR58t15oqH1H5t8Ng2ZX1SabJVoN9Q34bw=="],
 
     "@types/json-schema": ["@types/json-schema@7.0.15", "", {}, "sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA=="],
+
+    "@types/k6": ["@types/k6@2.3.1", "", {}, "sha512-3zbIAfQXvSDsA3ZaKC7+eczsvx1hGtL8o68iYEssOmTEmg0MuoCwZ45aAI3jDm0JtlhJZaQAszrie+M1xaqK7g=="],
 
     "@types/long": ["@types/long@4.0.2", "", {}, "sha512-MqTGEo5bj5t157U6fA/BiDynNkn0YknVdh48CMPkTSpFTVmvao5UQmm7uEF6xBEo7qIMAlY/JSleYaE6VOdpaA=="],
 

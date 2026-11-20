@@ -15,6 +15,7 @@ Mono-repo powered by TurboRepo.
     ├── data                # Shared data library - graphQL queries and mutations
     ├── infra               # Terraform config for deploying the services and apps
     ├── lifespan            # Contract lifespan string parser (@repo/lifespan), shared by backend and frontend
+    ├── load-test           # k6 load tests (@repo/load-test): seed, journeys, smoke/load/stress/spike/soak profiles
     ├── observability       # Shared Sentry config builders (@repo/observability) consumed by both apps
     ├── security            # Security audit tooling (@repo/security): endpoint inventory, tenant invariants, scanners
     ├── typescript-config   # Shared typescript config

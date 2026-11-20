@@ -25,5 +25,15 @@ staging|release)
   ;;
 esac
 
+# The production-sized load-test environment (packages/load-test). Terms are
+# published before the seed because the seed accepts the latest published
+# version on every account; the app's own auto-publish runs only after boot.
+if [ "${APP_ENV}" = "load-test" ]; then
+  echo "Publishing terms…"
+  bun run terms:publish
+  echo "Loading load-test fixtures…"
+  bun run db:fixtures:load-test
+fi
+
 echo "Starting backend…"
 exec bun run start:prod
