@@ -1676,6 +1676,31 @@ DO $$ BEGIN
   END IF;
 END $$;
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "change_feed_entries" (
+	"id" bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "change_feed_entries_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1),
+	"xid" xid8 DEFAULT pg_current_xact_id() NOT NULL,
+	"area" text NOT NULL,
+	"organization_unit_id" uuid,
+	"user_id" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_change_feed_entries_xid" ON "change_feed_entries" ("xid");
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_change_feed_entries_created_at" ON "change_feed_entries" ("created_at");
+--> statement-breakpoint
+CREATE OR REPLACE FUNCTION record_change_feed_entry() RETURNS trigger AS $$
+DECLARE
+  row_data jsonb := CASE TG_OP WHEN 'DELETE' THEN to_jsonb(OLD) ELSE to_jsonb(NEW) END;
+BEGIN
+  INSERT INTO change_feed_entries (area, organization_unit_id, user_id)
+  VALUES (TG_ARGV[0], (row_data->>'organization_unit_id')::uuid, row_data->>TG_ARGV[1]);
+  RETURN NULL;
+END $$ LANGUAGE plpgsql;
+--> statement-breakpoint
+CREATE OR REPLACE TRIGGER membership_requests_change_feed AFTER INSERT OR UPDATE OR DELETE ON membership_requests
+  FOR EACH ROW EXECUTE FUNCTION record_change_feed_entry('membership-requests', 'user_id');
+--> statement-breakpoint
 -- Seed row required by core (idempotent).
 INSERT INTO "users" ("id", "name", "email", "check_in_id", "firstname", "lastname")
 VALUES ('system-automated', 'Caluno Automated System', 'system-automated@caluno.internal', 'system-automated-checkin', 'Caluno', 'Automated System')

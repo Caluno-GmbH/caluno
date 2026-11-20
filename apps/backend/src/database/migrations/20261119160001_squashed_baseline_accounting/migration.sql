@@ -809,3 +809,10 @@ DO $$ BEGIN
     ALTER TABLE "time_entries" ADD CONSTRAINT "time_entries_4MweV9u9xVMF_fkey" FOREIGN KEY ("reimbursement_type_key") REFERENCES "reimbursement_types"("key") ON DELETE RESTRICT;
   END IF;
 END $$;
+--> statement-breakpoint
+-- Change-feed triggers; record_change_feed_entry() and change_feed_entries are created in part 1.
+CREATE OR REPLACE TRIGGER contracts_change_feed AFTER INSERT OR UPDATE OR DELETE ON contracts
+  FOR EACH ROW EXECUTE FUNCTION record_change_feed_entry('contracts', 'volunteer_id');
+--> statement-breakpoint
+CREATE OR REPLACE TRIGGER invoices_change_feed AFTER INSERT OR UPDATE OR DELETE ON invoices
+  FOR EACH ROW EXECUTE FUNCTION record_change_feed_entry('invoices', 'volunteer_id');
