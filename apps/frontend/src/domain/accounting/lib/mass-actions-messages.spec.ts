@@ -22,8 +22,8 @@ const reimbursementsDe = de.Accounting.reimbursements as unknown as Record<
   unknown
 >;
 
-const enKeys = new Set(leafKeys(reimbursements['massActions']));
-const deKeys = new Set(leafKeys(reimbursementsDe['massActions']));
+const enKeys = new Set(leafKeys(reimbursements.massActions));
+const deKeys = new Set(leafKeys(reimbursementsDe.massActions));
 
 describe('Accounting.reimbursements.massActions i18n parity', () => {
   it('the massActions subtree exists and is non-empty in en', () => {
