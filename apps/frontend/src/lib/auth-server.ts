@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
 import { getLocale } from 'next-intl/server';
 import { redirect } from '@/i18n/navigation';
-import { API_URL } from './constants';
+import { fetchSession } from './session-fetch';
 import { buildSignInHref } from './sign-in-redirect';
 
 export async function getSession() {
@@ -12,23 +12,7 @@ export async function getSession() {
     return null;
   }
 
-  try {
-    const response = await fetch(`${API_URL}/api/auth/get-session`, {
-      headers: {
-        cookie: cookieHeader,
-      },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const session = await response.json();
-    return session;
-  } catch {
-    return null;
-  }
+  return fetchSession(cookieHeader);
 }
 
 export async function requireAuth() {
