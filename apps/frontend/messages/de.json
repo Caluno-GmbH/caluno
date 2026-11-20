@@ -2338,6 +2338,10 @@
           "title": "E-Mail-Versand ist aus",
           "description": "Empfänger und Betreff gelten nur beim Versand per E-Mail. Bei „Herunterladen“ werden sie nicht gespeichert."
         },
+        "unsavedChangesTitle": "Nicht gespeicherte Änderungen",
+        "unsavedChangesDescription": "Du hast nicht gespeicherte Änderungen. Wenn du die Seite jetzt verlässt, gehen deine Änderungen verloren.",
+        "unsavedChangesLeave": "Ohne Speichern verlassen",
+        "unsavedChangesStay": "Weiter bearbeiten",
         "saveSuccess": "Versandeinstellungen gespeichert",
         "saveError": "Die Versandeinstellungen konnten nicht gespeichert werden. Bitte versuche es erneut.",
         "loadError": "Die Versandeinstellungen konnten nicht geladen werden. Bitte lade die Seite neu.",
