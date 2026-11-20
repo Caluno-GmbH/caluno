@@ -30,7 +30,7 @@ export class ChangeFeedPruneSchedulerService {
       advisoryLock: this.advisoryLock,
       lockKey: ADVISORY_LOCK_KEYS.changeFeedPruneTick,
       event: 'change_feed_prune_tick',
-      run: () => this.changeFeedService.pruneExpired(new Date()),
+      run: () => this.changeFeedService.pruneExpired(),
     });
   }
 }

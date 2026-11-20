@@ -115,8 +115,8 @@ export class ChangeFeedService {
    * Rows strictly older than `now - FEED_RETENTION_MS` are removed; a row that
    * sits exactly on the cutoff survives. Returns how many rows were deleted.
    */
-  async pruneExpired(now: Date): Promise<{ deleted: number }> {
-    const cutoff = new Date(now.getTime() - FEED_RETENTION_MS);
+  async pruneExpired(): Promise<{ deleted: number }> {
+    const cutoff = new Date(Date.now() - FEED_RETENTION_MS);
 
     const deleted = await this.db
       .delete(changeFeedEntries)

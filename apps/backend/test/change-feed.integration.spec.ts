@@ -552,7 +552,7 @@ describe('changesSince', () => {
     });
 
     const service = app.get(ChangeFeedService);
-    const result = await service.pruneExpired(new Date());
+    const result = await service.pruneExpired();
 
     expect(result.deleted).toBeGreaterThanOrEqual(1);
 
